@@ -10,6 +10,7 @@
 __pycache__/
 *.py[cod]
 *.pyo
+*.tsbuildinfo
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -50,4 +51,3 @@ data/postgres/
 .vscode/
 *.swp
 *.swo
-
