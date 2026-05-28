@@ -66,6 +66,21 @@ POST /api/sources
 GET /api/sources/{source_id}
 PATCH /api/sources/{source_id}
 DELETE /api/sources/{source_id}
+POST /api/sources/{source_id}/index
 ```
 
 Source locations must use an approved URL scheme or live under `data/approved_sources/`.
+
+The current indexing prototype supports local Markdown and text files. It chunks approved files, creates embeddings, and stores vectors in ChromaDB with source access metadata.
+
+Embedding provider behavior:
+
+- `EMBEDDING_PROVIDER=auto` uses OpenAI when `OPENAI_API_KEY` is set.
+- If no OpenAI key is available, it falls back to Ollama at `OLLAMA_BASE_URL`.
+- `OLLAMA_EMBEDDING_MODEL` defaults to `nomic-embed-text`.
+
+For local Ollama fallback, pull the embedding model first:
+
+```bash
+ollama pull nomic-embed-text
+```

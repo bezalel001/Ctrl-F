@@ -13,8 +13,24 @@ class Settings(BaseSettings):
         default="sqlite:///./ctrlf.db",
         validation_alias="DATABASE_URL",
     )
+    approved_sources_root: str = Field(default="../data/approved_sources", validation_alias="APPROVED_SOURCES_ROOT")
+    vector_store_provider: str = Field(default="chroma", validation_alias="VECTOR_STORE_PROVIDER")
+    chroma_host: str = Field(default="localhost", validation_alias="CHROMA_HOST")
+    chroma_port: int = Field(default=8001, validation_alias="CHROMA_PORT")
+    chroma_collection: str = Field(default="ctrl_f_sources", validation_alias="CHROMA_COLLECTION")
+    embedding_provider: str = Field(default="openai", validation_alias="EMBEDDING_PROVIDER")
+    embedding_model: str = Field(default="text-embedding-3-small", validation_alias="EMBEDDING_MODEL")
+    openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
+    ollama_base_url: str = Field(default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL")
+    ollama_embedding_model: str = Field(default="nomic-embed-text", validation_alias="OLLAMA_EMBEDDING_MODEL")
+    ollama_chat_model: str = Field(default="llama3.2", validation_alias="OLLAMA_CHAT_MODEL")
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
 
 
 @lru_cache

@@ -7,7 +7,9 @@ from sqlmodel import Session
 from app.core.config import Settings, get_settings
 from app.models.user import UserProfile
 from app.services.auth_service import AuthenticationError, resolve_user_from_token
+from app.services.embedding_service import EmbeddingProvider, OllamaEmbeddingProvider, OpenAIEmbeddingProvider
 from app.storage.database import get_session
+from app.storage.vector_store import ChromaVectorStore, VectorStore
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -39,6 +41,41 @@ def require_permission(permission: str):
 
 
 SessionDep = Annotated[Session, Depends(get_session)]
+
+
+def get_embedding_provider(settings: Annotated[Settings, Depends(get_settings)]) -> EmbeddingProvider:
+    if settings.embedding_provider in {"openai", "auto"} and settings.openai_api_key:
+        return OpenAIEmbeddingProvider(api_key=settings.openai_api_key, model=settings.embedding_model)
+
+    if settings.embedding_provider in {"openai", "ollama", "auto"}:
+        return OllamaEmbeddingProvider(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_embedding_model,
+        )
+
+    if settings.embedding_provider != "openai":
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unsupported embedding provider",
+        )
+
+
+def get_vector_store(settings: Annotated[Settings, Depends(get_settings)]) -> VectorStore:
+    if settings.vector_store_provider != "chroma":
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unsupported vector store provider",
+        )
+
+    return ChromaVectorStore(
+        host=settings.chroma_host,
+        port=settings.chroma_port,
+        collection_name=settings.chroma_collection,
+    )
+
+
+EmbeddingProviderDep = Annotated[EmbeddingProvider, Depends(get_embedding_provider)]
+VectorStoreDep = Annotated[VectorStore, Depends(get_vector_store)]
 
 
 def _unauthorized() -> HTTPException:

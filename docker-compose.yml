@@ -17,17 +17,24 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-development}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://ctrlf:ctrlf@postgres:5432/ctrlf}
+      APPROVED_SOURCES_ROOT: ${APPROVED_SOURCES_ROOT:-/data/approved_sources}
       VECTOR_STORE_PROVIDER: ${VECTOR_STORE_PROVIDER:-chroma}
       CHROMA_HOST: ${CHROMA_HOST:-chroma}
       CHROMA_PORT: ${CHROMA_INTERNAL_PORT:-8000}
-      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      CHROMA_COLLECTION: ${CHROMA_COLLECTION:-ctrl_f_sources}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-auto}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
-      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-llama3.2}
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:-change-me}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./data/approved_sources:/data/approved_sources:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,6 +68,16 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
 
+  ollama:
+    image: ollama/ollama:latest
+    profiles:
+      - ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
 volumes:
   postgres_data:
   chroma_data:
+  ollama_data:
