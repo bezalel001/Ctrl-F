@@ -47,6 +47,7 @@ def chat(
 
     return ChatResponse(
         conversation_id=conversation_id,
+        message_id=str(uuid4()),
         answer=answer,
         sources=[_to_chat_source(chunk) for chunk in chunks],
         confidence=confidence,
@@ -58,6 +59,7 @@ def chat(
 def _fallback_response(conversation_id: str, *, confidence: float) -> ChatResponse:
     return ChatResponse(
         conversation_id=conversation_id,
+        message_id=str(uuid4()),
         answer="I don't know based on the approved company sources available to me.",
         sources=[],
         confidence=confidence,
@@ -78,4 +80,3 @@ def _to_chat_source(chunk: RetrievedChunk) -> ChatSource:
         excerpt=excerpt,
         score=round(chunk.score, 2),
     )
-

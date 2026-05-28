@@ -8,10 +8,10 @@ export interface ChatSource {
 
 export interface ChatResponse {
   conversation_id: string;
+  message_id: string;
   answer: string;
   sources: ChatSource[];
   confidence: number;
   warning: string | null;
   suggested_contacts: string[];
 }
-

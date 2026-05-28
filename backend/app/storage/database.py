@@ -16,6 +16,7 @@ engine = create_database_engine(get_settings().database_url)
 
 def init_db() -> None:
     # Import table models before metadata creation.
+    from app.models import feedback as _feedback  # noqa: F401
     from app.models import source as _source  # noqa: F401
 
     SQLModel.metadata.create_all(engine)
@@ -24,4 +25,3 @@ def init_db() -> None:
 def get_session() -> Generator[Session, None, None]:
     with Session(engine) as session:
         yield session
-

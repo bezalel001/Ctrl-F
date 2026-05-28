@@ -16,9 +16,9 @@ class ChatSource(BaseModel):
 
 class ChatResponse(BaseModel):
     conversation_id: str
+    message_id: str
     answer: str
     sources: list[ChatSource]
     confidence: float
     warning: str | None = None
     suggested_contacts: list[str] = Field(default_factory=list)
-

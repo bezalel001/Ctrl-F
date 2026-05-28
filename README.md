@@ -58,3 +58,7 @@ For local answer generation fallback:
 ```bash
 docker compose --profile ollama exec ollama ollama pull llama3.2
 ```
+
+## Feedback Review
+
+Answers can be rated helpful or not helpful in the chat UI. Demo users with `feedback:review`, such as `hr@example.com`, `manager@example.com`, and `admin@example.com`, see feedback summary data in the side panel.

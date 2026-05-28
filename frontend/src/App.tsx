@@ -5,15 +5,19 @@ import {
   LogOut,
   Send,
   ShieldCheck,
+  ThumbsDown,
+  ThumbsUp,
   UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { getCurrentUser, login } from "./api/auth";
 import { sendChatMessage } from "./api/chat";
+import { getFeedback, getFeedbackStats, submitFeedback } from "./api/feedback";
 import { getHealth } from "./api/health";
 import type { UserProfile } from "./types/auth";
 import type { ChatSource } from "./types/chat";
+import type { FeedbackRating, FeedbackRecord, FeedbackStats } from "./types/feedback";
 import type { HealthResponse } from "./types/health";
 import "./styles.css";
 
@@ -24,11 +28,14 @@ interface ChatMessage {
   id: string;
   role: "assistant" | "user";
   body: string;
+  messageId?: string;
+  question?: string;
   confidence?: number;
   warning?: string | null;
   sources?: ChatSource[];
   contacts?: string[];
   status?: MessageStatus;
+  feedbackRating?: FeedbackRating;
 }
 
 const demoUsers = [
@@ -59,6 +66,9 @@ function App() {
   const [draft, setDraft] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [feedbackRecords, setFeedbackRecords] = useState<FeedbackRecord[]>([]);
+  const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -97,6 +107,14 @@ function App() {
       active = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    if (!token || !user?.permissions.includes("feedback:review")) return;
+
+    refreshFeedbackReview().catch((error) => {
+      setFeedbackError(error instanceof Error ? error.message : "Feedback review could not be loaded.");
+    });
+  }, [token, user]);
 
   const latestAssistantSources = useMemo(() => {
     return [...messages].reverse().find((message) => message.sources?.length)?.sources ?? [];
@@ -149,6 +167,8 @@ function App() {
         {
           id: crypto.randomUUID(),
           role: "assistant",
+          messageId: response.message_id,
+          question,
           body: response.answer,
           confidence: response.confidence,
           warning: response.warning,
@@ -172,12 +192,48 @@ function App() {
     }
   }
 
+  async function handleFeedback(message: ChatMessage, rating: FeedbackRating) {
+    if (!token || !message.messageId || !message.question || message.confidence === undefined) return;
+
+    setFeedbackError(null);
+    try {
+      await submitFeedback(token, {
+        message_id: message.messageId,
+        rating,
+        question: message.question,
+        answer: message.body,
+        confidence: message.confidence,
+        sources: message.sources ?? [],
+        comment: null,
+      });
+      setMessages((current) =>
+        current.map((item) => (item.id === message.id ? { ...item, feedbackRating: rating } : item)),
+      );
+      if (user?.permissions.includes("feedback:review")) {
+        await refreshFeedbackReview(token);
+      }
+    } catch (error) {
+      setFeedbackError(error instanceof Error ? error.message : "Feedback could not be saved.");
+    }
+  }
+
+  async function refreshFeedbackReview(activeToken = token) {
+    if (!activeToken || !user?.permissions.includes("feedback:review")) return;
+
+    const [records, stats] = await Promise.all([getFeedback(activeToken), getFeedbackStats(activeToken)]);
+    setFeedbackRecords(records);
+    setFeedbackStats(stats);
+  }
+
   function clearSession() {
     window.localStorage.removeItem("ctrlf_token");
     setToken(null);
     setUser(null);
     setConversationId(null);
     setMessages(initialMessages);
+    setFeedbackRecords([]);
+    setFeedbackStats(null);
+    setFeedbackError(null);
   }
 
   return (
@@ -230,6 +286,29 @@ function App() {
                     {message.warning ? <p className="message-warning">{message.warning}</p> : null}
                     {message.contacts?.length ? (
                       <p className="message-meta">Contacts: {message.contacts.join(", ")}</p>
+                    ) : null}
+                    {message.role === "assistant" && message.messageId ? (
+                      <div className="feedback-controls" aria-label="Answer feedback">
+                        <button
+                          type="button"
+                          onClick={() => handleFeedback(message, "helpful")}
+                          disabled={message.feedbackRating !== undefined}
+                          aria-label="Mark answer helpful"
+                        >
+                          <ThumbsUp size={15} />
+                          <span>Helpful</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFeedback(message, "not_helpful")}
+                          disabled={message.feedbackRating !== undefined}
+                          aria-label="Mark answer not helpful"
+                        >
+                          <ThumbsDown size={15} />
+                          <span>Not helpful</span>
+                        </button>
+                        {message.feedbackRating ? <span>Recorded: {message.feedbackRating.replace("_", " ")}</span> : null}
+                      </div>
                     ) : null}
                   </article>
                 ))}
@@ -285,6 +364,7 @@ function App() {
                   <LogOut size={16} />
                   <span>Sign out</span>
                 </button>
+                {feedbackError ? <p className="form-error">{feedbackError}</p> : null}
               </section>
 
               <section>
@@ -308,6 +388,43 @@ function App() {
                   <p className="empty-state">No sources attached.</p>
                 )}
               </section>
+
+              {user.permissions.includes("feedback:review") ? (
+                <section>
+                  <div className="panel-heading">
+                    <ThumbsUp size={18} />
+                    <h2>Feedback</h2>
+                  </div>
+                  {feedbackStats ? (
+                    <dl className="metadata-list">
+                      <div>
+                        <dt>Total</dt>
+                        <dd>{feedbackStats.total}</dd>
+                      </div>
+                      <div>
+                        <dt>Helpful</dt>
+                        <dd>{feedbackStats.helpful}</dd>
+                      </div>
+                      <div>
+                        <dt>Needs work</dt>
+                        <dd>{feedbackStats.not_helpful}</dd>
+                      </div>
+                    </dl>
+                  ) : (
+                    <p className="empty-state">No feedback loaded.</p>
+                  )}
+                  {feedbackRecords.length ? (
+                    <ol className="review-list">
+                      {feedbackRecords.slice(0, 4).map((record) => (
+                        <li key={record.id}>
+                          <span>{record.rating.replace("_", " ")}</span>
+                          <p>{record.question}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : null}
+                </section>
+              ) : null}
             </aside>
           </div>
         )}
@@ -317,4 +434,3 @@ function App() {
 }
 
 export default App;
-

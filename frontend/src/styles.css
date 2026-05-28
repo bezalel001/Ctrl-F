@@ -257,9 +257,38 @@ a:hover {
   font-weight: 700;
 }
 
+.feedback-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.feedback-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #bccbc3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #2f4b3f;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.feedback-controls > span {
+  color: #65776f;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
 .composer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
   gap: 10px;
   padding: 14px;
   border-top: 1px solid #d6ded9;
@@ -268,7 +297,7 @@ a:hover {
 
 .composer input {
   width: 100%;
-  min-height: 44px;
+  height: 44px;
   padding: 0 14px;
   border: 1px solid #bccbc3;
   border-radius: 8px;
@@ -285,7 +314,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   width: 44px;
-  min-height: 44px;
+  height: 44px;
   border: 0;
   border-radius: 8px;
   background: #2f6f4e;
@@ -364,6 +393,36 @@ a:hover {
   color: #65776f;
   font-size: 0.78rem;
   font-weight: 750;
+}
+
+.review-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 12px 0 0;
+  list-style: none;
+}
+
+.review-list li {
+  padding: 10px;
+  border: 1px solid #d7ded9;
+  border-radius: 8px;
+  background: #fbfcfb;
+}
+
+.review-list span {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: #2f6f4e;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.review-list p {
+  color: #52665d;
+  font-size: 0.86rem;
+  line-height: 1.4;
 }
 
 .empty-state {

@@ -104,3 +104,18 @@ For local Ollama chat fallback, pull the chat model first:
 ```bash
 ollama pull llama3.2
 ```
+
+## Feedback
+
+Employees can rate generated answers for later review.
+
+```text
+POST /api/feedback
+```
+
+Reviewers with `feedback:review` can inspect feedback and summary counts.
+
+```text
+GET /api/admin/feedback
+GET /api/admin/feedback/stats
+```
