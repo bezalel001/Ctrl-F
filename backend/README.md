@@ -47,3 +47,25 @@ Current user endpoint:
 ```text
 GET /api/auth/me
 ```
+
+## Source Registry
+
+Knowledge owners and admins can manage approved source metadata through protected source endpoints.
+
+Required permission:
+
+```text
+sources:manage
+```
+
+Endpoints:
+
+```text
+GET /api/sources
+POST /api/sources
+GET /api/sources/{source_id}
+PATCH /api/sources/{source_id}
+DELETE /api/sources/{source_id}
+```
+
+Source locations must use an approved URL scheme or live under `data/approved_sources/`.
