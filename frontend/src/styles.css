@@ -182,6 +182,13 @@ a:hover {
   font-size: 0.9rem;
 }
 
+.form-success {
+  margin-top: 8px;
+  color: #246c45;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .chat-panel,
 .context-panel {
   border: 1px solid #d6ded9;
@@ -423,6 +430,102 @@ a:hover {
   color: #52665d;
   font-size: 0.86rem;
   line-height: 1.4;
+}
+
+.admin-form {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-form label {
+  color: #476156;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-form input,
+.admin-form select {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid #bccbc3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #16211d;
+  font-size: 0.88rem;
+}
+
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.action-row button,
+.source-admin-list button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #bccbc3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #2f4b3f;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.action-row button[type="submit"] {
+  border: 0;
+  background: #2f6f4e;
+  color: #ffffff;
+}
+
+.source-admin-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 12px 0 0;
+  list-style: none;
+}
+
+.source-admin-list li {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d7ded9;
+  border-radius: 8px;
+  background: #fbfcfb;
+}
+
+.source-admin-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.source-admin-list strong {
+  font-size: 0.9rem;
+}
+
+.source-admin-list div span {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #e6f4ec;
+  color: #246c45;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.source-admin-list p {
+  color: #52665d;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .empty-state {

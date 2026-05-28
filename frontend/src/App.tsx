@@ -1,8 +1,11 @@
 import {
   AlertTriangle,
   CheckCircle2,
+  Database,
   FileText,
   LogOut,
+  Plus,
+  RefreshCw,
   Send,
   ShieldCheck,
   ThumbsDown,
@@ -15,10 +18,12 @@ import { getCurrentUser, login } from "./api/auth";
 import { sendChatMessage } from "./api/chat";
 import { getFeedback, getFeedbackStats, submitFeedback } from "./api/feedback";
 import { getHealth } from "./api/health";
+import { createSource, getSources, indexSource } from "./api/sources";
 import type { UserProfile } from "./types/auth";
 import type { ChatSource } from "./types/chat";
 import type { FeedbackRating, FeedbackRecord, FeedbackStats } from "./types/feedback";
 import type { HealthResponse } from "./types/health";
+import type { SourceCreatePayload, SourceRecord } from "./types/source";
 import "./styles.css";
 
 type ConnectionState = "checking" | "connected" | "unavailable";
@@ -54,6 +59,25 @@ const initialMessages: ChatMessage[] = [
   },
 ];
 
+const initialSourceForm: SourceCreatePayload = {
+  title: "Vacation Policy",
+  description: "Approved HR policy for paid time off.",
+  source_type: "document",
+  location: "data/approved_sources/hr/vacation.md",
+  owning_department: "Human Resources",
+  allowed_roles: ["employee", "manager", "hr", "admin"],
+  allowed_departments: [],
+  approval_status: "approved",
+  version: "2026.1",
+};
+
+function splitList(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function App() {
   const [connectionState, setConnectionState] = useState<ConnectionState>("checking");
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -69,6 +93,12 @@ function App() {
   const [feedbackRecords, setFeedbackRecords] = useState<FeedbackRecord[]>([]);
   const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [sourceRecords, setSourceRecords] = useState<SourceRecord[]>([]);
+  const [sourceForm, setSourceForm] = useState<SourceCreatePayload>(initialSourceForm);
+  const [sourceStatus, setSourceStatus] = useState<string | null>(null);
+  const [sourceError, setSourceError] = useState<string | null>(null);
+  const [isSourceSaving, setIsSourceSaving] = useState(false);
+  const [indexingSourceId, setIndexingSourceId] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -113,6 +143,14 @@ function App() {
 
     refreshFeedbackReview().catch((error) => {
       setFeedbackError(error instanceof Error ? error.message : "Feedback review could not be loaded.");
+    });
+  }, [token, user]);
+
+  useEffect(() => {
+    if (!token || !user?.permissions.includes("sources:manage")) return;
+
+    refreshSourceRegistry().catch((error) => {
+      setSourceError(error instanceof Error ? error.message : "Source registry could not be loaded.");
     });
   }, [token, user]);
 
@@ -225,6 +263,50 @@ function App() {
     setFeedbackStats(stats);
   }
 
+  async function refreshSourceRegistry(activeToken = token) {
+    if (!activeToken || !user?.permissions.includes("sources:manage")) return;
+
+    const sources = await getSources(activeToken);
+    setSourceRecords(sources);
+  }
+
+  async function handleSourceSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token || isSourceSaving) return;
+
+    setIsSourceSaving(true);
+    setSourceError(null);
+    setSourceStatus(null);
+
+    try {
+      const created = await createSource(token, sourceForm);
+      setSourceStatus(`Added ${created.title}.`);
+      await refreshSourceRegistry(token);
+    } catch (error) {
+      setSourceError(error instanceof Error ? error.message : "Source could not be saved.");
+    } finally {
+      setIsSourceSaving(false);
+    }
+  }
+
+  async function handleIndexSource(source: SourceRecord) {
+    if (!token || indexingSourceId !== null) return;
+
+    setIndexingSourceId(source.id);
+    setSourceError(null);
+    setSourceStatus(null);
+
+    try {
+      const result = await indexSource(token, source.id);
+      setSourceStatus(`Indexed ${result.chunk_count} chunk${result.chunk_count === 1 ? "" : "s"} from ${source.title}.`);
+      await refreshSourceRegistry(token);
+    } catch (error) {
+      setSourceError(error instanceof Error ? error.message : "Source could not be indexed.");
+    } finally {
+      setIndexingSourceId(null);
+    }
+  }
+
   function clearSession() {
     window.localStorage.removeItem("ctrlf_token");
     setToken(null);
@@ -234,6 +316,9 @@ function App() {
     setFeedbackRecords([]);
     setFeedbackStats(null);
     setFeedbackError(null);
+    setSourceRecords([]);
+    setSourceStatus(null);
+    setSourceError(null);
   }
 
   return (
@@ -388,6 +473,99 @@ function App() {
                   <p className="empty-state">No sources attached.</p>
                 )}
               </section>
+
+              {user.permissions.includes("sources:manage") ? (
+                <section>
+                  <div className="panel-heading">
+                    <Database size={18} />
+                    <h2>Source Registry</h2>
+                  </div>
+
+                  <form className="admin-form" onSubmit={handleSourceSubmit}>
+                    <label htmlFor="source-title">Title</label>
+                    <input
+                      id="source-title"
+                      value={sourceForm.title}
+                      onChange={(event) => setSourceForm((current) => ({ ...current, title: event.target.value }))}
+                    />
+
+                    <label htmlFor="source-location">Location</label>
+                    <input
+                      id="source-location"
+                      value={sourceForm.location}
+                      onChange={(event) => setSourceForm((current) => ({ ...current, location: event.target.value }))}
+                    />
+
+                    <label htmlFor="source-department">Owner</label>
+                    <input
+                      id="source-department"
+                      value={sourceForm.owning_department}
+                      onChange={(event) =>
+                        setSourceForm((current) => ({ ...current, owning_department: event.target.value }))
+                      }
+                    />
+
+                    <label htmlFor="source-roles">Roles</label>
+                    <input
+                      id="source-roles"
+                      value={sourceForm.allowed_roles.join(", ")}
+                      onChange={(event) =>
+                        setSourceForm((current) => ({ ...current, allowed_roles: splitList(event.target.value) }))
+                      }
+                    />
+
+                    <label htmlFor="source-status">Status</label>
+                    <select
+                      id="source-status"
+                      value={sourceForm.approval_status}
+                      onChange={(event) =>
+                        setSourceForm((current) => ({ ...current, approval_status: event.target.value }))
+                      }
+                    >
+                      <option value="approved">approved</option>
+                      <option value="draft">draft</option>
+                      <option value="archived">archived</option>
+                    </select>
+
+                    <div className="action-row">
+                      <button type="submit" disabled={isSourceSaving}>
+                        <Plus size={15} />
+                        <span>{isSourceSaving ? "Adding" : "Add"}</span>
+                      </button>
+                      <button type="button" onClick={() => refreshSourceRegistry()} disabled={!token}>
+                        <RefreshCw size={15} />
+                        <span>Refresh</span>
+                      </button>
+                    </div>
+                  </form>
+
+                  {sourceStatus ? <p className="form-success">{sourceStatus}</p> : null}
+                  {sourceError ? <p className="form-error">{sourceError}</p> : null}
+
+                  {sourceRecords.length ? (
+                    <ol className="source-admin-list">
+                      {sourceRecords.slice(0, 5).map((source) => (
+                        <li key={source.id}>
+                          <div>
+                            <strong>{source.title}</strong>
+                            <span>{source.approval_status}</span>
+                          </div>
+                          <p>{source.location}</p>
+                          <button
+                            type="button"
+                            onClick={() => handleIndexSource(source)}
+                            disabled={indexingSourceId !== null || source.approval_status !== "approved"}
+                          >
+                            {indexingSourceId === source.id ? "Indexing" : source.indexed_at ? "Reindex" : "Index"}
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="empty-state">No registered sources.</p>
+                  )}
+                </section>
+              ) : null}
 
               {user.permissions.includes("feedback:review") ? (
                 <section>

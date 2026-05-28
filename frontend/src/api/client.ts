@@ -13,6 +13,10 @@ export async function postJson<T>(path: string, options: RequestOptions = {}): P
   return requestJson<T>("POST", path, options);
 }
 
+export async function patchJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return requestJson<T>("PATCH", path, options);
+}
+
 async function requestJson<T>(method: string, path: string, options: RequestOptions): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method,
