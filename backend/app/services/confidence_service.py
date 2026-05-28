@@ -1,6 +1,7 @@
 from app.services.retrieval_service import RetrievedChunk
 
 LOW_CONFIDENCE_THRESHOLD = 0.85
+RELIABLE_ANSWER_THRESHOLD = 0.5
 
 
 def estimate_confidence(chunks: list[RetrievedChunk]) -> float:
@@ -19,3 +20,6 @@ def confidence_warning(confidence: float) -> str | None:
 
     return None
 
+
+def is_reliable_confidence(confidence: float) -> bool:
+    return confidence >= RELIABLE_ANSWER_THRESHOLD

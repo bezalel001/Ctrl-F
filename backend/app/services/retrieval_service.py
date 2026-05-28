@@ -13,6 +13,7 @@ class RetrievedChunk:
     source_title: str
     source_location: str
     score: float
+    owning_department: str = ""
 
 
 def retrieve_authorized_chunks(
@@ -58,6 +59,7 @@ def _to_retrieved_chunk(candidate: RetrievedVector) -> RetrievedChunk:
         source_title=str(metadata["source_title"]),
         source_location=str(metadata["source_location"]),
         score=candidate.score,
+        owning_department=str(metadata.get("owning_department") or ""),
     )
 
 
@@ -66,4 +68,3 @@ def _split_metadata_list(value: object) -> set[str]:
         return set()
 
     return {item.strip() for item in value.split(",") if item.strip()}
-

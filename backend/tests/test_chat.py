@@ -126,6 +126,39 @@ def test_chat_returns_fallback_when_no_authorized_sources_exist() -> None:
     assert answer_generator.calls == 0
 
 
+def test_chat_returns_fallback_when_confidence_is_too_low() -> None:
+    vector_store = FakeVectorStore(
+        [
+            _retrieved_vector(
+                source_id=1,
+                title="Vacation Policy",
+                allowed_roles="employee",
+                allowed_departments="",
+                owning_department="Human Resources",
+                score=0.31,
+            ),
+        ],
+    )
+    answer_generator = FakeAnswerGenerator()
+
+    with _client(vector_store, answer_generator) as client:
+        token = _login(client, "employee@example.com")
+        response = client.post(
+            "/api/chat",
+            headers=_auth_headers(token),
+            json={"question": "Can I expense a private holiday?"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["answer"] == "I don't know based on the approved company sources available to me."
+    assert payload["sources"] == []
+    assert payload["confidence"] == 0.31
+    assert payload["warning"] is not None
+    assert payload["suggested_contacts"] == ["Human Resources", "IT Support"]
+    assert answer_generator.calls == 0
+
+
 def test_chat_uses_recent_conversation_history_for_followups() -> None:
     vector_store = FakeVectorStore(
         [
@@ -247,6 +280,7 @@ def _retrieved_vector(
     allowed_roles: str,
     allowed_departments: str,
     score: float,
+    owning_department: str = "Human Resources",
 ) -> RetrievedVector:
     return RetrievedVector(
         id=f"source:{source_id}:version:1.0:chunk:0",
@@ -255,6 +289,7 @@ def _retrieved_vector(
             "source_id": source_id,
             "source_title": title,
             "source_location": f"data/approved_sources/{source_id}.md",
+            "owning_department": owning_department,
             "approval_status": "approved",
             "allowed_roles": allowed_roles,
             "allowed_departments": allowed_departments,

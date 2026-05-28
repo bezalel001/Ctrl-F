@@ -911,6 +911,12 @@ Acceptance criteria:
 - No-source answers do not hallucinate.
 - Unauthorized role-specific requests are blocked.
 
+Current implementation note:
+
+- Confidence below 0.85 returns a warning.
+- Retrieval confidence below the reliable-answer threshold returns the safe fallback without calling the LLM.
+- Fallback responses include department-aware suggested contacts.
+
 ### Phase 7: Feedback Capture and Admin Review
 
 Deliverables:

@@ -87,13 +87,15 @@ ollama pull nomic-embed-text
 
 ## Chat
 
-The chat endpoint retrieves authorized Chroma chunks, generates a grounded answer, returns source citations, and warns when confidence is below 85%. It stores each user's conversations and loads the recent bounded message history when `conversation_id` is provided for follow-up questions.
+The chat endpoint retrieves authorized Chroma chunks, generates a grounded answer, returns source citations, and warns when confidence is below 85%. If retrieval confidence is below the reliable-answer threshold, it returns the safe fallback without calling the LLM. It stores each user's conversations and loads the recent bounded message history when `conversation_id` is provided for follow-up questions.
 
 ```text
 POST /api/chat
 ```
 
 Conversation history is used only to interpret follow-up wording. Approved retrieved source chunks remain the only grounding context for answer content.
+
+Fallback responses include suggested contacts based on the retrieved source owner when available, or the user's department when no reliable source is available.
 
 LLM provider behavior:
 

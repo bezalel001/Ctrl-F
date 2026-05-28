@@ -12,7 +12,7 @@ from app.api.dependencies import (
 from app.models.chat import ChatRequest, ChatResponse, ChatSource
 from app.models.user import UserProfile
 from app.services.answer_service import AnswerGenerationError
-from app.services.confidence_service import confidence_warning, estimate_confidence
+from app.services.confidence_service import confidence_warning, estimate_confidence, is_reliable_confidence
 from app.services.conversation_service import (
     ConversationAccessError,
     get_or_create_conversation,
@@ -20,6 +20,7 @@ from app.services.conversation_service import (
     record_message,
 )
 from app.services.retrieval_service import RetrievedChunk, retrieve_authorized_chunks
+from app.services.safety_service import suggested_contacts
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -61,10 +62,29 @@ def chat(
             role="assistant",
             content=_fallback_answer(),
         )
-        return _fallback_response(conversation.id, message_id=assistant_message.id, confidence=0.0)
+        return _fallback_response(
+            conversation.id,
+            message_id=assistant_message.id,
+            confidence=0.0,
+            contacts=suggested_contacts(current_user, chunks),
+        )
 
     confidence = estimate_confidence(chunks)
     warning = confidence_warning(confidence)
+
+    if not is_reliable_confidence(confidence):
+        assistant_message = record_message(
+            session,
+            conversation=conversation,
+            role="assistant",
+            content=_fallback_answer(),
+        )
+        return _fallback_response(
+            conversation.id,
+            message_id=assistant_message.id,
+            confidence=confidence,
+            contacts=suggested_contacts(current_user, chunks),
+        )
 
     try:
         answer = answer_generator.generate_answer(
@@ -79,7 +99,12 @@ def chat(
             role="assistant",
             content=_fallback_answer(),
         )
-        return _fallback_response(conversation.id, message_id=assistant_message.id, confidence=confidence)
+        return _fallback_response(
+            conversation.id,
+            message_id=assistant_message.id,
+            confidence=confidence,
+            contacts=suggested_contacts(current_user, chunks),
+        )
 
     assistant_message = record_message(
         session,
@@ -99,7 +124,13 @@ def chat(
     )
 
 
-def _fallback_response(conversation_id: str, *, message_id: str, confidence: float) -> ChatResponse:
+def _fallback_response(
+    conversation_id: str,
+    *,
+    message_id: str,
+    confidence: float,
+    contacts: list[str],
+) -> ChatResponse:
     return ChatResponse(
         conversation_id=conversation_id,
         message_id=message_id,
@@ -107,7 +138,7 @@ def _fallback_response(conversation_id: str, *, message_id: str, confidence: flo
         sources=[],
         confidence=confidence,
         warning=confidence_warning(confidence),
-        suggested_contacts=["Human Resources", "IT Support"],
+        suggested_contacts=contacts,
     )
 
 
