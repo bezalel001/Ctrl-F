@@ -6,6 +6,12 @@ from sqlmodel import Session
 
 from app.core.config import Settings, get_settings
 from app.models.user import UserProfile
+from app.services.answer_service import (
+    AnswerGenerator,
+    AnthropicAnswerGenerator,
+    OllamaAnswerGenerator,
+    OpenAIAnswerGenerator,
+)
 from app.services.auth_service import AuthenticationError, resolve_user_from_token
 from app.services.embedding_service import EmbeddingProvider, OllamaEmbeddingProvider, OpenAIEmbeddingProvider
 from app.storage.database import get_session
@@ -74,8 +80,32 @@ def get_vector_store(settings: Annotated[Settings, Depends(get_settings)]) -> Ve
     )
 
 
+def get_answer_generator(settings: Annotated[Settings, Depends(get_settings)]) -> AnswerGenerator:
+    if settings.llm_provider == "anthropic" and settings.anthropic_api_key:
+        return AnthropicAnswerGenerator(api_key=settings.anthropic_api_key, model=settings.anthropic_model)
+
+    if settings.llm_provider == "openai" and settings.openai_api_key:
+        return OpenAIAnswerGenerator(api_key=settings.openai_api_key, model=settings.openai_chat_model)
+
+    if settings.llm_provider == "ollama":
+        return OllamaAnswerGenerator(base_url=settings.ollama_base_url, model=settings.ollama_chat_model)
+
+    if settings.llm_provider == "auto":
+        if settings.anthropic_api_key:
+            return AnthropicAnswerGenerator(api_key=settings.anthropic_api_key, model=settings.anthropic_model)
+        if settings.openai_api_key:
+            return OpenAIAnswerGenerator(api_key=settings.openai_api_key, model=settings.openai_chat_model)
+        return OllamaAnswerGenerator(base_url=settings.ollama_base_url, model=settings.ollama_chat_model)
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Unsupported LLM provider",
+    )
+
+
 EmbeddingProviderDep = Annotated[EmbeddingProvider, Depends(get_embedding_provider)]
 VectorStoreDep = Annotated[VectorStore, Depends(get_vector_store)]
+AnswerGeneratorDep = Annotated[AnswerGenerator, Depends(get_answer_generator)]
 
 
 def _unauthorized() -> HTTPException:

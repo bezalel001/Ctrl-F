@@ -84,3 +84,23 @@ For local Ollama fallback, pull the embedding model first:
 ```bash
 ollama pull nomic-embed-text
 ```
+
+## Chat
+
+The chat endpoint retrieves authorized Chroma chunks, generates a grounded answer, returns source citations, and warns when confidence is below 85%.
+
+```text
+POST /api/chat
+```
+
+LLM provider behavior:
+
+- `LLM_PROVIDER=auto` uses Anthropic when `ANTHROPIC_API_KEY` is set.
+- If Anthropic is unavailable, it uses OpenAI when `OPENAI_API_KEY` is set.
+- If neither cloud key is available, it falls back to Ollama at `OLLAMA_BASE_URL`.
+
+For local Ollama chat fallback, pull the chat model first:
+
+```bash
+ollama pull llama3.2
+```

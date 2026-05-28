@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(default="http://localhost:11434", validation_alias="OLLAMA_BASE_URL")
     ollama_embedding_model: str = Field(default="nomic-embed-text", validation_alias="OLLAMA_EMBEDDING_MODEL")
     ollama_chat_model: str = Field(default="llama3.2", validation_alias="OLLAMA_CHAT_MODEL")
+    llm_provider: str = Field(default="auto", validation_alias="LLM_PROVIDER")
+    openai_chat_model: str = Field(default="gpt-4.1-mini", validation_alias="OPENAI_CHAT_MODEL")
+    anthropic_api_key: str | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
+    anthropic_model: str = Field(default="claude-sonnet-4-20250514", validation_alias="ANTHROPIC_MODEL")
 
     model_config = SettingsConfigDict(
         env_file=".env",

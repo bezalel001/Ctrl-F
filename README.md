@@ -39,6 +39,8 @@ Approved sample source files live under `data/approved_sources/`. The backend mo
 
 Provider mode defaults to `auto`. The backend uses OpenAI embeddings when `OPENAI_API_KEY` is set and falls back to Ollama embeddings when it is not.
 
+For answer generation, `LLM_PROVIDER=auto` uses Anthropic first, then OpenAI, then Ollama.
+
 Start the optional Ollama container with:
 
 ```bash
@@ -49,4 +51,10 @@ Then pull the fallback embedding model:
 
 ```bash
 docker compose --profile ollama exec ollama ollama pull nomic-embed-text
+```
+
+For local answer generation fallback:
+
+```bash
+docker compose --profile ollama exec ollama ollama pull llama3.2
 ```
