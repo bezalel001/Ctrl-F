@@ -1,16 +1,34 @@
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
-export async function getJson<T>(path: string): Promise<T> {
+interface RequestOptions {
+  token?: string;
+  body?: unknown;
+}
+
+export async function getJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return requestJson<T>("GET", path, options);
+}
+
+export async function postJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return requestJson<T>("POST", path, options);
+}
+
+async function requestJson<T>(method: string, path: string, options: RequestOptions): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
+    method,
     headers: {
       Accept: "application/json",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
     },
+    body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    const payload = await response.json().catch(() => null);
+    const detail = typeof payload?.detail === "string" ? payload.detail : `Request failed with status ${response.status}`;
+    throw new Error(detail);
   }
 
   return response.json() as Promise<T>;
 }
-
