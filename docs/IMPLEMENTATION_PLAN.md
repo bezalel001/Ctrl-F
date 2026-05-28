@@ -889,6 +889,12 @@ Acceptance criteria:
 - Follow-up questions use prior conversation context.
 - Old context is bounded to avoid prompt overflow.
 
+Current implementation note:
+
+- `POST /api/chat` persists conversations and messages in PostgreSQL-compatible SQLModel tables.
+- Follow-up requests can pass `conversation_id`; the backend loads the latest bounded message history for that same authenticated user.
+- Stored conversation history is used for follow-up interpretation only. Retrieved approved chunks remain the grounding source for answers.
+
 ### Phase 6: Confidence and Safety Handling
 
 Deliverables:

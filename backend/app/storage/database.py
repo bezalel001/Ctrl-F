@@ -16,6 +16,7 @@ engine = create_database_engine(get_settings().database_url)
 
 def init_db() -> None:
     # Import table models before metadata creation.
+    from app.models import conversation as _conversation  # noqa: F401
     from app.models import feedback as _feedback  # noqa: F401
     from app.models import source as _source  # noqa: F401
 

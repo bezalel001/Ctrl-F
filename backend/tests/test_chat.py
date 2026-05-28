@@ -3,10 +3,14 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 from fastapi.testclient import TestClient
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
 
 from app.api.dependencies import get_answer_generator, get_embedding_provider, get_vector_store
 from app.main import app
+from app.services.conversation_service import ConversationTurn
 from app.services.retrieval_service import RetrievedChunk
+from app.storage.database import get_session
 from app.storage.vector_store import RetrievedVector
 
 
@@ -18,9 +22,17 @@ class FakeEmbeddingProvider:
 @dataclass
 class FakeAnswerGenerator:
     calls: int = 0
+    last_history: list[ConversationTurn] | None = None
 
-    def generate_answer(self, *, question: str, chunks: list[RetrievedChunk]) -> str:
+    def generate_answer(
+        self,
+        *,
+        question: str,
+        chunks: list[RetrievedChunk],
+        history: list[ConversationTurn],
+    ) -> str:
         self.calls += 1
+        self.last_history = list(history)
         return f"Grounded answer for: {question}. Source: {chunks[0].source_title}."
 
 
@@ -114,6 +126,87 @@ def test_chat_returns_fallback_when_no_authorized_sources_exist() -> None:
     assert answer_generator.calls == 0
 
 
+def test_chat_uses_recent_conversation_history_for_followups() -> None:
+    vector_store = FakeVectorStore(
+        [
+            _retrieved_vector(
+                source_id=1,
+                title="Vacation Policy",
+                allowed_roles="employee",
+                allowed_departments="",
+                score=0.91,
+            ),
+        ],
+    )
+    answer_generator = FakeAnswerGenerator()
+
+    with _client(vector_store, answer_generator) as client:
+        token = _login(client, "employee@example.com")
+        first_response = client.post(
+            "/api/chat",
+            headers=_auth_headers(token),
+            json={"question": "How much vacation do I get?"},
+        )
+        conversation_id = first_response.json()["conversation_id"]
+
+        second_response = client.post(
+            "/api/chat",
+            headers=_auth_headers(token),
+            json={
+                "question": "Can I carry it over?",
+                "conversation_id": conversation_id,
+            },
+        )
+
+    assert second_response.status_code == 200
+    assert second_response.json()["conversation_id"] == conversation_id
+    assert answer_generator.calls == 2
+    assert answer_generator.last_history is not None
+    assert [(turn.role, turn.content) for turn in answer_generator.last_history] == [
+        ("user", "How much vacation do I get?"),
+        (
+            "assistant",
+            "Grounded answer for: How much vacation do I get?. Source: Vacation Policy.",
+        ),
+    ]
+
+
+def test_chat_does_not_expose_another_users_conversation() -> None:
+    vector_store = FakeVectorStore(
+        [
+            _retrieved_vector(
+                source_id=1,
+                title="Vacation Policy",
+                allowed_roles="employee,manager",
+                allowed_departments="",
+                score=0.91,
+            ),
+        ],
+    )
+    answer_generator = FakeAnswerGenerator()
+
+    with _client(vector_store, answer_generator) as client:
+        employee_token = _login(client, "employee@example.com")
+        manager_token = _login(client, "manager@example.com")
+        first_response = client.post(
+            "/api/chat",
+            headers=_auth_headers(employee_token),
+            json={"question": "How much vacation do I get?"},
+        )
+
+        response = client.post(
+            "/api/chat",
+            headers=_auth_headers(manager_token),
+            json={
+                "question": "What did they ask?",
+                "conversation_id": first_response.json()["conversation_id"],
+            },
+        )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Conversation not found"}
+
+
 def test_chat_requires_authentication() -> None:
     with _client(FakeVectorStore([]), FakeAnswerGenerator()) as client:
         response = client.post("/api/chat", json={"question": "Hello?"})
@@ -126,9 +219,21 @@ def _client(
     vector_store: FakeVectorStore,
     answer_generator: FakeAnswerGenerator,
 ) -> Generator[TestClient, None, None]:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def override_get_session() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
     app.dependency_overrides[get_embedding_provider] = lambda: FakeEmbeddingProvider()
     app.dependency_overrides[get_vector_store] = lambda: vector_store
     app.dependency_overrides[get_answer_generator] = lambda: answer_generator
+    app.dependency_overrides[get_session] = override_get_session
     try:
         yield TestClient(app)
     finally:
