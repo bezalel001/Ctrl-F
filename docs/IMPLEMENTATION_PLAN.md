@@ -978,6 +978,11 @@ Deliverables:
 - Add frontend smoke tests.
 - Document setup and demo flow.
 
+Current implementation note:
+
+- Fictitious sample documents live in `data/approved_sources/`.
+- `uv run python -m app.scripts.seed_demo_sources` registers those files as approved source records for local demos.
+
 Acceptance criteria:
 
 - 90% of test requests complete within 5 seconds in local/demo setup.

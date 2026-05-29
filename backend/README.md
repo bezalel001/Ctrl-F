@@ -73,6 +73,14 @@ Source locations must use an approved URL scheme or live under `data/approved_so
 
 The current indexing prototype supports local Markdown and text files. It chunks approved files, creates embeddings, and stores vectors in ChromaDB with source access metadata.
 
+Register the fictitious demo documents from `data/approved_sources/`:
+
+```bash
+uv run python -m app.scripts.seed_demo_sources
+```
+
+After seeding, index each approved source from the Source Registry UI or with `POST /api/sources/{source_id}/index`.
+
 Embedding provider behavior:
 
 - `EMBEDDING_PROVIDER=auto` uses OpenAI when `OPENAI_API_KEY` is set.
