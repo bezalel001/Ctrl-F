@@ -496,6 +496,12 @@ Fields:
 - timestamp
 - metadata
 
+Current implementation note:
+
+- Audit logs are stored in the `audit_logs` table.
+- Admins with `audit:read` can inspect logs at `GET /api/admin/audit`.
+- Current audited events include auth login success/failure, source create/update/delete/index, source validation failure, restricted conversation access, feedback review access, and low-confidence chat responses.
+
 Relevant requirements:
 
 - NfReq09

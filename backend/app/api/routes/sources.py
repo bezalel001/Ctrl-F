@@ -7,6 +7,7 @@ from app.core.config import Settings, get_settings
 from app.models.ingestion import IndexSourceResponse
 from app.models.source import SourceCreate, SourceRead, SourceUpdate
 from app.models.user import UserProfile
+from app.services.audit_service import create_audit_log
 from app.services.ingestion_service import SourceIndexingError, index_source
 from app.services.source_service import (
     SourceNotFoundError,
@@ -34,8 +35,24 @@ def create_approved_source(
     current_user: SourceManager,
 ) -> SourceRead:
     try:
-        return create_source(session, source_in, current_user)
+        source = create_source(session, source_in, current_user)
+        create_audit_log(
+            session,
+            event_type="source.created",
+            actor=current_user,
+            resource_type="source",
+            resource_id=source.id,
+            details={"title": source.title, "location": source.location},
+        )
+        return source
     except SourceValidationError as exc:
+        create_audit_log(
+            session,
+            event_type="source.validation_failed",
+            actor=current_user,
+            resource_type="source",
+            details={"location": source_in.location, "reason": str(exc)},
+        )
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
 
 
@@ -52,20 +69,44 @@ def update_approved_source(
     source_id: int,
     source_in: SourceUpdate,
     session: SessionDep,
-    _current_user: SourceManager,
+    current_user: SourceManager,
 ) -> SourceRead:
     try:
-        return update_source(session, source_id, source_in)
+        source = update_source(session, source_id, source_in)
+        create_audit_log(
+            session,
+            event_type="source.updated",
+            actor=current_user,
+            resource_type="source",
+            resource_id=source.id,
+            details={"title": source.title, "fields": sorted(source_in.model_dump(exclude_unset=True).keys())},
+        )
+        return source
     except SourceNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found") from exc
     except SourceValidationError as exc:
+        create_audit_log(
+            session,
+            event_type="source.validation_failed",
+            actor=current_user,
+            resource_type="source",
+            resource_id=source_id,
+            details={"reason": str(exc)},
+        )
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
 
 
 @router.delete("/{source_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_approved_source(source_id: int, session: SessionDep, _current_user: SourceManager) -> Response:
+def delete_approved_source(source_id: int, session: SessionDep, current_user: SourceManager) -> Response:
     try:
         delete_source(session, source_id)
+        create_audit_log(
+            session,
+            event_type="source.deleted",
+            actor=current_user,
+            resource_type="source",
+            resource_id=source_id,
+        )
     except SourceNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found") from exc
 
@@ -76,19 +117,28 @@ def delete_approved_source(source_id: int, session: SessionDep, _current_user: S
 def index_approved_source(
     source_id: int,
     session: SessionDep,
-    _current_user: SourceManager,
+    current_user: SourceManager,
     embedding_provider: EmbeddingProviderDep,
     vector_store: VectorStoreDep,
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> IndexSourceResponse:
     try:
-        return index_source(
+        result = index_source(
             session=session,
             source_id=source_id,
             approved_sources_root=settings.approved_sources_root,
             embedding_provider=embedding_provider,
             vector_store=vector_store,
         )
+        create_audit_log(
+            session,
+            event_type="source.indexed",
+            actor=current_user,
+            resource_type="source",
+            resource_id=source_id,
+            details={"chunk_count": result.chunk_count, "collection": result.collection},
+        )
+        return result
     except SourceNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found") from exc
     except SourceIndexingError as exc:

@@ -140,3 +140,15 @@ Both admin feedback endpoints support optional filters:
 - `max_confidence=0.0..1.0`
 - `source_id=<source-id>`
 - `limit=1..200`
+
+## Audit Logs
+
+Admins with `audit:read` can inspect audit events.
+
+```text
+GET /api/admin/audit
+```
+
+The endpoint supports `limit=1..500`.
+
+Current audited events include login success/failure, source create/update/delete/index, source validation failure, restricted conversation access, feedback review access, and low-confidence chat responses.

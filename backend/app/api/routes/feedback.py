@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.api.dependencies import SessionDep, get_current_user, require_permission
 from app.models.feedback import FeedbackCreate, FeedbackRating, FeedbackRead, FeedbackStats
 from app.models.user import UserProfile
+from app.services.audit_service import create_audit_log
 from app.services.feedback_service import FeedbackFilters, create_feedback, get_feedback_stats, list_feedback
 
 router = APIRouter(tags=["feedback"])
@@ -47,16 +48,45 @@ def submit_feedback(
 @router.get("/api/admin/feedback", response_model=list[FeedbackRead])
 def read_feedback(
     session: SessionDep,
-    _current_user: FeedbackReviewer,
+    current_user: FeedbackReviewer,
     filters: Annotated[FeedbackFilters, Depends(_feedback_filters)],
 ) -> list[FeedbackRead]:
+    create_audit_log(
+        session,
+        event_type="feedback.review_list",
+        actor=current_user,
+        resource_type="feedback",
+        details=_audit_filter_details(filters),
+    )
     return list_feedback(session, filters)
 
 
 @router.get("/api/admin/feedback/stats", response_model=FeedbackStats)
 def read_feedback_stats(
     session: SessionDep,
-    _current_user: FeedbackReviewer,
+    current_user: FeedbackReviewer,
     filters: Annotated[FeedbackFilters, Depends(_feedback_filters)],
 ) -> FeedbackStats:
+    create_audit_log(
+        session,
+        event_type="feedback.review_stats",
+        actor=current_user,
+        resource_type="feedback",
+        details=_audit_filter_details(filters),
+    )
     return get_feedback_stats(session, filters)
+
+
+def _audit_filter_details(filters: FeedbackFilters) -> dict[str, object]:
+    return {
+        key: value
+        for key, value in {
+            "rating": filters.rating,
+            "user_id": filters.user_id,
+            "min_confidence": filters.min_confidence,
+            "max_confidence": filters.max_confidence,
+            "source_id": filters.source_id,
+            "limit": filters.limit,
+        }.items()
+        if value is not None
+    }

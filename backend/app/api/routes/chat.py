@@ -12,6 +12,7 @@ from app.api.dependencies import (
 from app.models.chat import ChatRequest, ChatResponse, ChatSource
 from app.models.user import UserProfile
 from app.services.answer_service import AnswerGenerationError
+from app.services.audit_service import create_audit_log
 from app.services.confidence_service import confidence_warning, estimate_confidence, is_reliable_confidence
 from app.services.conversation_service import (
     ConversationAccessError,
@@ -41,6 +42,13 @@ def chat(
             user=current_user,
         )
     except ConversationAccessError as exc:
+        create_audit_log(
+            session,
+            event_type="conversation.access_denied",
+            actor=current_user,
+            resource_type="conversation",
+            resource_id=request.conversation_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found",
@@ -56,6 +64,13 @@ def chat(
     record_message(session, conversation=conversation, role="user", content=request.question)
 
     if not chunks:
+        _audit_low_confidence(
+            session,
+            current_user,
+            conversation_id=conversation.id,
+            confidence=0.0,
+            reason="no_authorized_chunks",
+        )
         assistant_message = record_message(
             session,
             conversation=conversation,
@@ -73,6 +88,14 @@ def chat(
     warning = confidence_warning(confidence)
 
     if not is_reliable_confidence(confidence):
+        _audit_low_confidence(
+            session,
+            current_user,
+            conversation_id=conversation.id,
+            confidence=confidence,
+            reason="unreliable_retrieval",
+            chunks=chunks,
+        )
         assistant_message = record_message(
             session,
             conversation=conversation,
@@ -93,6 +116,15 @@ def chat(
             history=history,
         )
     except AnswerGenerationError:
+        if warning:
+            _audit_low_confidence(
+                session,
+                current_user,
+                conversation_id=conversation.id,
+                confidence=confidence,
+                reason="answer_generation_failed",
+                chunks=chunks,
+            )
         assistant_message = record_message(
             session,
             conversation=conversation,
@@ -112,6 +144,16 @@ def chat(
         role="assistant",
         content=answer,
     )
+
+    if warning:
+        _audit_low_confidence(
+            session,
+            current_user,
+            conversation_id=conversation.id,
+            confidence=confidence,
+            reason="low_confidence_answer",
+            chunks=chunks,
+        )
 
     return ChatResponse(
         conversation_id=conversation.id,
@@ -144,6 +186,29 @@ def _fallback_response(
 
 def _fallback_answer() -> str:
     return "I don't know based on the approved company sources available to me."
+
+
+def _audit_low_confidence(
+    session,
+    user: UserProfile,
+    *,
+    conversation_id: str,
+    confidence: float,
+    reason: str,
+    chunks: list[RetrievedChunk] | None = None,
+) -> None:
+    create_audit_log(
+        session,
+        event_type="chat.low_confidence",
+        actor=user,
+        resource_type="conversation",
+        resource_id=conversation_id,
+        details={
+            "confidence": confidence,
+            "reason": reason,
+            "source_ids": [chunk.source_id for chunk in chunks or []],
+        },
+    )
 
 
 def _to_chat_source(chunk: RetrievedChunk) -> ChatSource:
