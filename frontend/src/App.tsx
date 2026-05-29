@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Send,
   ShieldCheck,
+  SlidersHorizontal,
   ThumbsDown,
   ThumbsUp,
   UserRound,
@@ -21,7 +22,7 @@ import { getHealth } from "./api/health";
 import { createSource, getSources, indexSource } from "./api/sources";
 import type { UserProfile } from "./types/auth";
 import type { ChatSource } from "./types/chat";
-import type { FeedbackRating, FeedbackRecord, FeedbackStats } from "./types/feedback";
+import type { FeedbackFilters, FeedbackRating, FeedbackRecord, FeedbackStats } from "./types/feedback";
 import type { HealthResponse } from "./types/health";
 import type { SourceCreatePayload, SourceRecord } from "./types/source";
 import "./styles.css";
@@ -71,6 +72,22 @@ const initialSourceForm: SourceCreatePayload = {
   version: "2026.1",
 };
 
+interface FeedbackFilterForm {
+  rating: "" | FeedbackRating;
+  userId: string;
+  maxConfidence: string;
+  sourceId: string;
+  limit: string;
+}
+
+const initialFeedbackFilters: FeedbackFilterForm = {
+  rating: "",
+  userId: "",
+  maxConfidence: "",
+  sourceId: "",
+  limit: "10",
+};
+
 function splitList(value: string): string[] {
   return value
     .split(",")
@@ -93,6 +110,7 @@ function App() {
   const [feedbackRecords, setFeedbackRecords] = useState<FeedbackRecord[]>([]);
   const [feedbackStats, setFeedbackStats] = useState<FeedbackStats | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [feedbackFilters, setFeedbackFilters] = useState<FeedbackFilterForm>(initialFeedbackFilters);
   const [sourceRecords, setSourceRecords] = useState<SourceRecord[]>([]);
   const [sourceForm, setSourceForm] = useState<SourceCreatePayload>(initialSourceForm);
   const [sourceStatus, setSourceStatus] = useState<string | null>(null);
@@ -258,9 +276,39 @@ function App() {
   async function refreshFeedbackReview(activeToken = token) {
     if (!activeToken || !user?.permissions.includes("feedback:review")) return;
 
-    const [records, stats] = await Promise.all([getFeedback(activeToken), getFeedbackStats(activeToken)]);
+    const filters = toFeedbackFilters(feedbackFilters);
+    const [records, stats] = await Promise.all([getFeedback(activeToken, filters), getFeedbackStats(activeToken, filters)]);
     setFeedbackRecords(records);
     setFeedbackStats(stats);
+  }
+
+  async function handleFeedbackFilterSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFeedbackError(null);
+
+    try {
+      await refreshFeedbackReview();
+    } catch (error) {
+      setFeedbackError(error instanceof Error ? error.message : "Feedback review could not be loaded.");
+    }
+  }
+
+  async function handleFeedbackFilterReset() {
+    setFeedbackFilters(initialFeedbackFilters);
+    setFeedbackError(null);
+
+    if (!token || !user?.permissions.includes("feedback:review")) return;
+
+    try {
+      const [records, stats] = await Promise.all([
+        getFeedback(token, toFeedbackFilters(initialFeedbackFilters)),
+        getFeedbackStats(token, toFeedbackFilters(initialFeedbackFilters)),
+      ]);
+      setFeedbackRecords(records);
+      setFeedbackStats(stats);
+    } catch (error) {
+      setFeedbackError(error instanceof Error ? error.message : "Feedback review could not be loaded.");
+    }
   }
 
   async function refreshSourceRegistry(activeToken = token) {
@@ -573,6 +621,84 @@ function App() {
                     <ThumbsUp size={18} />
                     <h2>Feedback</h2>
                   </div>
+                  <form className="feedback-filter-form" onSubmit={handleFeedbackFilterSubmit}>
+                    <label htmlFor="feedback-rating">Rating</label>
+                    <select
+                      id="feedback-rating"
+                      value={feedbackFilters.rating}
+                      onChange={(event) =>
+                        setFeedbackFilters((current) => ({
+                          ...current,
+                          rating: event.target.value as FeedbackFilterForm["rating"],
+                        }))
+                      }
+                    >
+                      <option value="">All</option>
+                      <option value="helpful">Helpful</option>
+                      <option value="not_helpful">Needs work</option>
+                    </select>
+
+                    <label htmlFor="feedback-user">User ID</label>
+                    <input
+                      id="feedback-user"
+                      value={feedbackFilters.userId}
+                      onChange={(event) =>
+                        setFeedbackFilters((current) => ({ ...current, userId: event.target.value }))
+                      }
+                      placeholder="u_employee"
+                    />
+
+                    <label htmlFor="feedback-confidence">Max confidence</label>
+                    <input
+                      id="feedback-confidence"
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={feedbackFilters.maxConfidence}
+                      onChange={(event) =>
+                        setFeedbackFilters((current) => ({ ...current, maxConfidence: event.target.value }))
+                      }
+                      placeholder="0.85"
+                    />
+
+                    <label htmlFor="feedback-source">Source ID</label>
+                    <input
+                      id="feedback-source"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={feedbackFilters.sourceId}
+                      onChange={(event) =>
+                        setFeedbackFilters((current) => ({ ...current, sourceId: event.target.value }))
+                      }
+                      placeholder="1"
+                    />
+
+                    <label htmlFor="feedback-limit">Limit</label>
+                    <input
+                      id="feedback-limit"
+                      type="number"
+                      min="1"
+                      max="200"
+                      step="1"
+                      value={feedbackFilters.limit}
+                      onChange={(event) =>
+                        setFeedbackFilters((current) => ({ ...current, limit: event.target.value }))
+                      }
+                    />
+
+                    <div className="action-row">
+                      <button type="submit">
+                        <SlidersHorizontal size={15} />
+                        <span>Apply</span>
+                      </button>
+                      <button type="button" onClick={handleFeedbackFilterReset}>
+                        <RefreshCw size={15} />
+                        <span>Reset</span>
+                      </button>
+                    </div>
+                  </form>
                   {feedbackStats ? (
                     <dl className="metadata-list">
                       <div>
@@ -593,10 +719,13 @@ function App() {
                   )}
                   {feedbackRecords.length ? (
                     <ol className="review-list">
-                      {feedbackRecords.slice(0, 4).map((record) => (
+                      {feedbackRecords.map((record) => (
                         <li key={record.id}>
                           <span>{record.rating.replace("_", " ")}</span>
                           <p>{record.question}</p>
+                          <small>
+                            {record.user_id} - {Math.round(record.confidence * 100)}%
+                          </small>
                         </li>
                       ))}
                     </ol>
@@ -609,6 +738,29 @@ function App() {
       </section>
     </main>
   );
+}
+
+function toFeedbackFilters(form: FeedbackFilterForm): FeedbackFilters {
+  return {
+    rating: form.rating || undefined,
+    user_id: form.userId.trim() || undefined,
+    max_confidence: parseOptionalNumber(form.maxConfidence),
+    source_id: parseOptionalInteger(form.sourceId),
+    limit: parseOptionalInteger(form.limit),
+  };
+}
+
+function parseOptionalNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseOptionalInteger(value: string): number | undefined {
+  const parsed = parseOptionalNumber(value);
+  return parsed === undefined ? undefined : Math.trunc(parsed);
 }
 
 export default App;

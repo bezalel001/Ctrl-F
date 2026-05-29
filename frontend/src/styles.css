@@ -432,19 +432,35 @@ a:hover {
   line-height: 1.4;
 }
 
-.admin-form {
+.review-list small {
+  display: block;
+  margin-top: 6px;
+  color: #65776f;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-form,
+.feedback-filter-form {
   display: grid;
   gap: 8px;
 }
 
-.admin-form label {
+.feedback-filter-form {
+  margin-bottom: 12px;
+}
+
+.admin-form label,
+.feedback-filter-form label {
   color: #476156;
   font-size: 0.78rem;
   font-weight: 800;
 }
 
 .admin-form input,
-.admin-form select {
+.admin-form select,
+.feedback-filter-form input,
+.feedback-filter-form select {
   width: 100%;
   min-height: 38px;
   padding: 0 10px;

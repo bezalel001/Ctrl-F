@@ -24,3 +24,11 @@ export interface FeedbackStats {
   not_helpful: number;
 }
 
+export interface FeedbackFilters {
+  rating?: FeedbackRating;
+  user_id?: string;
+  min_confidence?: number;
+  max_confidence?: number;
+  source_id?: number;
+  limit?: number;
+}
