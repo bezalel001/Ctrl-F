@@ -27,10 +27,11 @@ export interface SourceCreatePayload {
   version: string;
 }
 
+export type SourceUpdatePayload = Partial<SourceCreatePayload>;
+
 export interface IndexSourceResponse {
   source_id: number;
   chunk_count: number;
   collection: string;
   indexed_at: string;
 }
-

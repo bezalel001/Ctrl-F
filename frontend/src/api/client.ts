@@ -17,6 +17,10 @@ export async function patchJson<T>(path: string, options: RequestOptions = {}): 
   return requestJson<T>("PATCH", path, options);
 }
 
+export async function deleteJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return requestJson<T>("DELETE", path, options);
+}
+
 async function requestJson<T>(method: string, path: string, options: RequestOptions): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method,
@@ -32,6 +36,10 @@ async function requestJson<T>(method: string, path: string, options: RequestOpti
     const payload = await response.json().catch(() => null);
     const detail = typeof payload?.detail === "string" ? payload.detail : `Request failed with status ${response.status}`;
     throw new Error(detail);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return response.json() as Promise<T>;

@@ -1,7 +1,9 @@
 import {
   AlertTriangle,
+  Check,
   CheckCircle2,
   Database,
+  Edit3,
   FileText,
   LogOut,
   Plus,
@@ -11,7 +13,9 @@ import {
   SlidersHorizontal,
   ThumbsDown,
   ThumbsUp,
+  Trash2,
   UserRound,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -19,7 +23,7 @@ import { getCurrentUser, login } from "./api/auth";
 import { sendChatMessage } from "./api/chat";
 import { getFeedback, getFeedbackStats, submitFeedback } from "./api/feedback";
 import { getHealth } from "./api/health";
-import { createSource, getSources, indexSource } from "./api/sources";
+import { createSource, deleteSource, getSources, indexSource, updateSource } from "./api/sources";
 import type { UserProfile } from "./types/auth";
 import type { ChatSource } from "./types/chat";
 import type { FeedbackFilters, FeedbackRating, FeedbackRecord, FeedbackStats } from "./types/feedback";
@@ -117,6 +121,8 @@ function App() {
   const [sourceError, setSourceError] = useState<string | null>(null);
   const [isSourceSaving, setIsSourceSaving] = useState(false);
   const [indexingSourceId, setIndexingSourceId] = useState<number | null>(null);
+  const [editingSourceId, setEditingSourceId] = useState<number | null>(null);
+  const [deletingSourceId, setDeletingSourceId] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -327,13 +333,67 @@ function App() {
     setSourceStatus(null);
 
     try {
-      const created = await createSource(token, sourceForm);
-      setSourceStatus(`Added ${created.title}.`);
+      if (editingSourceId === null) {
+        const created = await createSource(token, sourceForm);
+        setSourceStatus(`Added ${created.title}.`);
+      } else {
+        const updated = await updateSource(token, editingSourceId, sourceForm);
+        setSourceStatus(`Updated ${updated.title}.`);
+        setEditingSourceId(null);
+        setSourceForm(initialSourceForm);
+      }
       await refreshSourceRegistry(token);
     } catch (error) {
       setSourceError(error instanceof Error ? error.message : "Source could not be saved.");
     } finally {
       setIsSourceSaving(false);
+    }
+  }
+
+  function handleEditSource(source: SourceRecord) {
+    setEditingSourceId(source.id);
+    setSourceError(null);
+    setSourceStatus(null);
+    setSourceForm({
+      title: source.title,
+      description: source.description,
+      source_type: source.source_type,
+      location: source.location,
+      owning_department: source.owning_department,
+      allowed_roles: source.allowed_roles,
+      allowed_departments: source.allowed_departments,
+      approval_status: source.approval_status,
+      version: source.version,
+    });
+  }
+
+  function handleCancelSourceEdit() {
+    setEditingSourceId(null);
+    setSourceForm(initialSourceForm);
+    setSourceError(null);
+    setSourceStatus(null);
+  }
+
+  async function handleDeleteSource(source: SourceRecord) {
+    if (!token || deletingSourceId !== null) return;
+    if (!window.confirm(`Delete source "${source.title}"?`)) return;
+
+    setDeletingSourceId(source.id);
+    setSourceError(null);
+    setSourceStatus(null);
+
+    try {
+      await deleteSource(token, source.id);
+      if (editingSourceId === source.id) {
+        setEditingSourceId(null);
+        setSourceForm(initialSourceForm);
+      }
+      setSourceStatus(`Deleted ${source.title}.`);
+      await refreshSourceRegistry(token);
+    } catch (error) {
+      setSourceError(error instanceof Error ? error.message : "Source could not be deleted.");
+    } finally {
+      setDeletingSourceId(null);
     }
   }
 
@@ -367,6 +427,8 @@ function App() {
     setSourceRecords([]);
     setSourceStatus(null);
     setSourceError(null);
+    setEditingSourceId(null);
+    setDeletingSourceId(null);
   }
 
   return (
@@ -526,7 +588,7 @@ function App() {
                 <section>
                   <div className="panel-heading">
                     <Database size={18} />
-                    <h2>Source Registry</h2>
+                    <h2>{editingSourceId === null ? "Source Registry" : "Edit Source"}</h2>
                   </div>
 
                   <form className="admin-form" onSubmit={handleSourceSubmit}>
@@ -562,6 +624,19 @@ function App() {
                       }
                     />
 
+                    <label htmlFor="source-departments">Departments</label>
+                    <input
+                      id="source-departments"
+                      value={sourceForm.allowed_departments.join(", ")}
+                      onChange={(event) =>
+                        setSourceForm((current) => ({
+                          ...current,
+                          allowed_departments: splitList(event.target.value),
+                        }))
+                      }
+                      placeholder="Engineering, Human Resources"
+                    />
+
                     <label htmlFor="source-status">Status</label>
                     <select
                       id="source-status"
@@ -577,12 +652,18 @@ function App() {
 
                     <div className="action-row">
                       <button type="submit" disabled={isSourceSaving}>
-                        <Plus size={15} />
-                        <span>{isSourceSaving ? "Adding" : "Add"}</span>
+                        {editingSourceId === null ? <Plus size={15} /> : <Check size={15} />}
+                        <span>
+                          {isSourceSaving ? "Saving" : editingSourceId === null ? "Add" : "Save"}
+                        </span>
                       </button>
-                      <button type="button" onClick={() => refreshSourceRegistry()} disabled={!token}>
-                        <RefreshCw size={15} />
-                        <span>Refresh</span>
+                      <button
+                        type="button"
+                        onClick={editingSourceId === null ? () => refreshSourceRegistry() : handleCancelSourceEdit}
+                        disabled={!token}
+                      >
+                        {editingSourceId === null ? <RefreshCw size={15} /> : <X size={15} />}
+                        <span>{editingSourceId === null ? "Refresh" : "Cancel"}</span>
                       </button>
                     </div>
                   </form>
@@ -592,20 +673,39 @@ function App() {
 
                   {sourceRecords.length ? (
                     <ol className="source-admin-list">
-                      {sourceRecords.slice(0, 5).map((source) => (
-                        <li key={source.id}>
+                      {sourceRecords.map((source) => (
+                        <li className={editingSourceId === source.id ? "source-admin-list__item--active" : ""} key={source.id}>
                           <div>
                             <strong>{source.title}</strong>
                             <span>{source.approval_status}</span>
                           </div>
                           <p>{source.location}</p>
-                          <button
-                            type="button"
-                            onClick={() => handleIndexSource(source)}
-                            disabled={indexingSourceId !== null || source.approval_status !== "approved"}
-                          >
-                            {indexingSourceId === source.id ? "Indexing" : source.indexed_at ? "Reindex" : "Index"}
-                          </button>
+                          <div className="source-actions">
+                            <button
+                              type="button"
+                              onClick={() => handleEditSource(source)}
+                              disabled={isSourceSaving || deletingSourceId !== null}
+                            >
+                              <Edit3 size={14} />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleIndexSource(source)}
+                              disabled={indexingSourceId !== null || source.approval_status !== "approved"}
+                            >
+                              <RefreshCw size={14} />
+                              <span>{indexingSourceId === source.id ? "Indexing" : source.indexed_at ? "Reindex" : "Index"}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSource(source)}
+                              disabled={deletingSourceId !== null || indexingSourceId !== null}
+                            >
+                              <Trash2 size={14} />
+                              <span>{deletingSourceId === source.id ? "Deleting" : "Delete"}</span>
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ol>

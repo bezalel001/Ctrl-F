@@ -500,6 +500,10 @@ a:hover {
   color: #ffffff;
 }
 
+.source-actions button:last-child {
+  color: #8b1d1d;
+}
+
 .source-admin-list {
   display: grid;
   gap: 10px;
@@ -517,7 +521,12 @@ a:hover {
   background: #fbfcfb;
 }
 
-.source-admin-list div {
+.source-admin-list__item--active {
+  border-color: #6fa783;
+  background: #f4fbf7;
+}
+
+.source-admin-list li > div:first-child {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -528,7 +537,7 @@ a:hover {
   font-size: 0.9rem;
 }
 
-.source-admin-list div span {
+.source-admin-list li > div:first-child span {
   padding: 2px 7px;
   border-radius: 999px;
   background: #e6f4ec;
@@ -542,6 +551,12 @@ a:hover {
   font-size: 0.82rem;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.source-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .empty-state {

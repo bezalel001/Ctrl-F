@@ -966,6 +966,11 @@ Acceptance criteria:
 - Knowledge owner can manage sources.
 - Reviewer can inspect feedback and filter low-rated answers.
 
+Current implementation note:
+
+- The Source Registry UI supports add, edit, delete, and index actions for approved source metadata.
+- Feedback review includes filters for rating, source, confidence, user, and result limit.
+
 ### Phase 10: Evaluation and Hardening
 
 Deliverables:
