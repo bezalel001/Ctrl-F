@@ -931,6 +931,10 @@ Acceptance criteria:
 - User can submit helpful/not helpful feedback.
 - Admin can review feedback records and summary statistics.
 
+Current implementation note:
+
+- Admin feedback list and stats endpoints support filters for rating, user id, confidence range, source id, and result limit.
+
 ### Phase 8: Frontend Chat App
 
 Deliverables:

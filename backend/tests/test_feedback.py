@@ -61,6 +61,51 @@ def test_reviewer_can_list_feedback_and_stats(client: TestClient) -> None:
     assert stats_response.json() == {"total": 2, "helpful": 1, "not_helpful": 1}
 
 
+def test_reviewer_can_filter_feedback(client: TestClient) -> None:
+    employee_token = _login(client, "employee@example.com")
+    reviewer_token = _login(client, "hr@example.com")
+
+    client.post(
+        "/api/feedback",
+        headers=_auth_headers(employee_token),
+        json=_feedback_payload("helpful", message_id="msg-1", confidence=0.91, source_id=1),
+    )
+    client.post(
+        "/api/feedback",
+        headers=_auth_headers(employee_token),
+        json=_feedback_payload("not_helpful", message_id="msg-2", confidence=0.42, source_id=2),
+    )
+
+    list_response = client.get(
+        "/api/admin/feedback",
+        headers=_auth_headers(reviewer_token),
+        params={"rating": "not_helpful", "max_confidence": 0.5, "source_id": 2},
+    )
+    stats_response = client.get(
+        "/api/admin/feedback/stats",
+        headers=_auth_headers(reviewer_token),
+        params={"rating": "not_helpful", "max_confidence": 0.5, "source_id": 2},
+    )
+
+    assert list_response.status_code == 200
+    assert [item["message_id"] for item in list_response.json()] == ["msg-2"]
+    assert stats_response.status_code == 200
+    assert stats_response.json() == {"total": 1, "helpful": 0, "not_helpful": 1}
+
+
+def test_feedback_filter_rejects_invalid_confidence_range(client: TestClient) -> None:
+    reviewer_token = _login(client, "hr@example.com")
+
+    response = client.get(
+        "/api/admin/feedback",
+        headers=_auth_headers(reviewer_token),
+        params={"min_confidence": 0.9, "max_confidence": 0.5},
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "min_confidence must be less than or equal to max_confidence"}
+
+
 def test_feedback_review_requires_permission(client: TestClient) -> None:
     token = _login(client, "employee@example.com")
 
@@ -70,14 +115,20 @@ def test_feedback_review_requires_permission(client: TestClient) -> None:
     assert response.json() == {"detail": "Insufficient permission"}
 
 
-def _feedback_payload(rating: str) -> dict[str, object]:
+def _feedback_payload(
+    rating: str,
+    *,
+    message_id: str = "msg-1",
+    confidence: float = 0.91,
+    source_id: int = 1,
+) -> dict[str, object]:
     return {
-        "message_id": "msg-1",
+        "message_id": message_id,
         "rating": rating,
         "question": "How much vacation do I get?",
         "answer": "Employees receive 25 paid vacation days.",
-        "confidence": 0.91,
-        "sources": [{"source_id": 1, "title": "Vacation Policy"}],
+        "confidence": confidence,
+        "sources": [{"source_id": source_id, "title": "Vacation Policy"}],
         "comment": None,
     }
 
@@ -90,4 +141,3 @@ def _login(client: TestClient, email: str) -> str:
 
 def _auth_headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
-

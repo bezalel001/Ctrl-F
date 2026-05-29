@@ -123,3 +123,12 @@ Reviewers with `feedback:review` can inspect feedback and summary counts.
 GET /api/admin/feedback
 GET /api/admin/feedback/stats
 ```
+
+Both admin feedback endpoints support optional filters:
+
+- `rating=helpful|not_helpful`
+- `user_id=<user-id>`
+- `min_confidence=0.0..1.0`
+- `max_confidence=0.0..1.0`
+- `source_id=<source-id>`
+- `limit=1..200`
