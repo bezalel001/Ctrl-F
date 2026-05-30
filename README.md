@@ -2,6 +2,8 @@
 
 AI-powered company knowledge assistant with a React/TypeScript frontend and Python/FastAPI backend.
 
+For the full setup, seeding, indexing, demo, feedback, audit, and evaluation sequence, see [docs/DEMO_FLOW.md](docs/DEMO_FLOW.md).
+
 ## Backend
 
 ```bash

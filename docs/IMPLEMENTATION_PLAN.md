@@ -997,6 +997,7 @@ Current implementation note:
 - `uv run python -m app.scripts.run_evaluation` runs those cases against a running backend and checks citations, fallback behavior, warnings, restricted-source exposure, and response time.
 - `backend/tests/test_integration_chat_flow.py` covers login, source registration, indexing, chat, feedback, feedback review, and audit visibility with fake AI dependencies.
 - `npm run smoke` in `frontend/` builds the React app and checks that core chat, source-management, and feedback-review UI surfaces are present in the production bundle.
+- `docs/DEMO_FLOW.md` documents the full setup, seeding, indexing, demo, feedback, audit, and evaluation sequence.
 
 Acceptance criteria:
 
