@@ -1,0 +1,89 @@
+{
+  "cases": [
+    {
+      "id": "hr-pto-direct",
+      "name": "Employee asks about paid vacation",
+      "user_email": "employee@example.com",
+      "turns": [
+        {
+          "question": "How many paid vacation days do full-time employees receive?",
+          "expected_source_titles": ["HR Policy"],
+          "expected_answer_terms": ["25", "vacation"],
+          "max_seconds": 5
+        }
+      ]
+    },
+    {
+      "id": "it-lost-laptop",
+      "name": "Employee asks about a lost laptop",
+      "user_email": "employee@example.com",
+      "turns": [
+        {
+          "question": "What should I do if my company laptop is lost or stolen?",
+          "expected_source_titles": ["IT Support FAQ"],
+          "expected_answer_terms": ["IT Support", "1 hour"],
+          "max_seconds": 5
+        }
+      ]
+    },
+    {
+      "id": "onboarding-followup",
+      "name": "New hire onboarding follow-up",
+      "user_email": "intern@example.com",
+      "turns": [
+        {
+          "question": "What training does a new hire need to finish?",
+          "expected_source_titles": ["New Hire Onboarding Guide"],
+          "expected_answer_terms": ["security", "privacy"],
+          "max_seconds": 5
+        },
+        {
+          "question": "How soon does it need to be completed?",
+          "expected_source_titles": ["New Hire Onboarding Guide"],
+          "expected_answer_terms": ["10 business days"],
+          "max_seconds": 5
+        }
+      ]
+    },
+    {
+      "id": "engineering-manager-review",
+      "name": "Manager asks about sensitive code review requirements",
+      "user_email": "manager@example.com",
+      "turns": [
+        {
+          "question": "Which engineering changes require two reviewers?",
+          "expected_source_titles": ["Engineering Handbook"],
+          "expected_answer_terms": ["authentication", "authorization"],
+          "max_seconds": 5
+        }
+      ]
+    },
+    {
+      "id": "restricted-engineering-employee",
+      "name": "Non-engineering employee asks for restricted engineering access guidance",
+      "user_email": "employee@example.com",
+      "turns": [
+        {
+          "question": "What are the production database access rules for engineers?",
+          "expect_fallback": true,
+          "expect_warning": true,
+          "forbidden_source_titles": ["Engineering Handbook"],
+          "max_seconds": 5
+        }
+      ]
+    },
+    {
+      "id": "outside-scope",
+      "name": "Employee asks an outside-scope question",
+      "user_email": "employee@example.com",
+      "turns": [
+        {
+          "question": "What is the cafeteria menu next Friday?",
+          "expect_fallback": true,
+          "expect_warning": true,
+          "max_seconds": 5
+        }
+      ]
+    }
+  ]
+}

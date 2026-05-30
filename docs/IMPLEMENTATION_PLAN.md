@@ -993,6 +993,8 @@ Current implementation note:
 
 - Fictitious sample documents live in `data/approved_sources/`.
 - `uv run python -m app.scripts.seed_demo_sources` registers those files as approved source records for local demos.
+- Evaluation cases live in `data/evaluation/demo_cases.json`.
+- `uv run python -m app.scripts.run_evaluation` runs those cases against a running backend and checks citations, fallback behavior, warnings, restricted-source exposure, and response time.
 
 Acceptance criteria:
 

@@ -152,3 +152,13 @@ GET /api/admin/audit
 The endpoint supports `limit=1..500`.
 
 Current audited events include login success/failure, source create/update/delete/index, source validation failure, restricted conversation access, feedback review access, and low-confidence chat responses.
+
+## Demo Evaluation
+
+After seeding and indexing demo sources, run the evaluation cases against a running backend:
+
+```bash
+uv run python -m app.scripts.run_evaluation
+```
+
+The runner logs in with demo users, asks the questions in `data/evaluation/demo_cases.json`, and checks response time, expected citations, fallback behavior, warnings, and restricted-source exposure.
