@@ -507,6 +507,16 @@ function App() {
                     ) : null}
                   </article>
                 ))}
+                {isSending ? (
+                  <article className="message message--assistant message--typing" aria-live="polite" aria-label="Ctrl-F is typing">
+                    <span>Ctrl-F</span>
+                    <div className="typing-indicator">
+                      <i />
+                      <i />
+                      <i />
+                    </div>
+                  </article>
+                ) : null}
               </div>
 
               <form className="composer" onSubmit={handleSubmit}>

@@ -26,6 +26,7 @@ const cssBundle = await readFile(join(assetsDir.pathname, cssAsset), "utf8");
   "Max confidence",
   "Helpful",
   "Not helpful",
+  "Ctrl-F is typing",
 ].forEach((text) => {
   assert(jsBundle.includes(text), `missing UI text in bundle: ${text}`);
 });
@@ -35,6 +36,8 @@ const cssBundle = await readFile(join(assetsDir.pathname, cssAsset), "utf8");
   ".chat-panel",
   ".source-admin-list",
   ".feedback-filter-form",
+  ".typing-indicator",
+  "@keyframestyping-pulse",
   "@media(max-width:820px)",
 ].forEach((selector) => {
   assert(cssBundle.replaceAll(" ", "").includes(selector), `missing CSS selector in bundle: ${selector}`);

@@ -198,7 +198,8 @@ a:hover {
 
 .chat-panel {
   display: grid;
-  grid-template-rows: minmax(420px, 62vh) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: min(760px, calc(100vh - 118px));
   overflow: hidden;
 }
 
@@ -210,8 +211,13 @@ a:hover {
   overflow-y: auto;
 }
 
+.message-list::before {
+  content: "";
+  margin-top: auto;
+}
+
 .message {
-  width: min(680px, 92%);
+  width: min(980px, 96%);
   padding: 12px 14px;
   border-radius: 8px;
   border: 1px solid #d7ded9;
@@ -235,6 +241,7 @@ a:hover {
 
 .message--user {
   align-self: flex-end;
+  width: min(940px, 88%);
   border-color: #b9d8c5;
   background: #e6f4ec;
 }
@@ -247,6 +254,48 @@ a:hover {
 .message--error {
   border-color: #e5aaa5;
   background: #fff1f0;
+}
+
+.message--typing {
+  width: fit-content;
+  min-width: 96px;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+}
+
+.typing-indicator i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6d8177;
+  animation: typing-pulse 1.05s ease-in-out infinite;
+}
+
+.typing-indicator i:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.typing-indicator i:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+@keyframes typing-pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
 }
 
 .message-meta,
@@ -594,7 +643,7 @@ a:hover {
   }
 
   .chat-panel {
-    grid-template-rows: minmax(360px, 58vh) auto;
+    min-height: calc(100vh - 150px);
   }
 
   .connection {
