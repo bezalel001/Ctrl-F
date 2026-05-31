@@ -56,13 +56,7 @@ const demoUsers = [
   { email: "admin@example.com", label: "Admin" },
 ];
 
-const initialMessages: ChatMessage[] = [
-  {
-    id: "welcome",
-    role: "assistant",
-    body: "Ask a question after signing in.",
-  },
-];
+const initialMessages: ChatMessage[] = [];
 
 const initialSourceForm: SourceCreatePayload = {
   title: "Vacation Policy",
@@ -185,6 +179,8 @@ function App() {
   const latestConfidence = useMemo(() => {
     return [...messages].reverse().find((message) => message.confidence !== undefined)?.confidence;
   }, [messages]);
+
+  const hasStartedChat = messages.length > 0;
 
   const connectionLabel = useMemo(() => {
     if (connectionState === "connected") return "Backend connected";
@@ -431,6 +427,27 @@ function App() {
     setDeletingSourceId(null);
   }
 
+  function renderComposer(className = "composer") {
+    return (
+      <form className={className} onSubmit={handleSubmit}>
+        <label className="sr-only" htmlFor="question">
+          Question
+        </label>
+        <input
+          id="question"
+          type="text"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="Ask a company question"
+          disabled={isSending}
+        />
+        <button type="submit" aria-label="Send question" disabled={isSending || !draft.trim()}>
+          <Send size={18} />
+        </button>
+      </form>
+    );
+  }
+
   return (
     <main className="app-shell">
       <section className="workspace" aria-label="Ctrl-F workspace">
@@ -469,72 +486,71 @@ function App() {
           </section>
         ) : (
           <div className="content-grid">
-            <section className="chat-panel" aria-label="Chat">
-              <div className="message-list">
-                {messages.map((message) => (
-                  <article className={`message message--${message.role} message--${message.status ?? "normal"}`} key={message.id}>
-                    <span>{message.role === "assistant" ? "Ctrl-F" : "You"}</span>
-                    <p>{message.body}</p>
-                    {message.confidence !== undefined ? (
-                      <p className="message-meta">Confidence {Math.round(message.confidence * 100)}%</p>
+            <section className={`chat-panel ${hasStartedChat ? "" : "chat-panel--empty"}`} aria-label="Chat">
+              {hasStartedChat ? (
+                <>
+                  <div className="message-list">
+                    {messages.map((message) => (
+                      <article
+                        className={`message message--${message.role} message--${message.status ?? "normal"}`}
+                        key={message.id}
+                      >
+                        <span>{message.role === "assistant" ? "Ctrl-F" : "You"}</span>
+                        <p>{message.body}</p>
+                        {message.confidence !== undefined ? (
+                          <p className="message-meta">Confidence {Math.round(message.confidence * 100)}%</p>
+                        ) : null}
+                        {message.warning ? <p className="message-warning">{message.warning}</p> : null}
+                        {message.contacts?.length ? (
+                          <p className="message-meta">Contacts: {message.contacts.join(", ")}</p>
+                        ) : null}
+                        {message.role === "assistant" && message.messageId ? (
+                          <div className="feedback-controls" aria-label="Answer feedback">
+                            <button
+                              type="button"
+                              onClick={() => handleFeedback(message, "helpful")}
+                              disabled={message.feedbackRating !== undefined}
+                              aria-label="Mark answer helpful"
+                            >
+                              <ThumbsUp size={15} />
+                              <span>Helpful</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleFeedback(message, "not_helpful")}
+                              disabled={message.feedbackRating !== undefined}
+                              aria-label="Mark answer not helpful"
+                            >
+                              <ThumbsDown size={15} />
+                              <span>Not helpful</span>
+                            </button>
+                            {message.feedbackRating ? <span>Recorded: {message.feedbackRating.replace("_", " ")}</span> : null}
+                          </div>
+                        ) : null}
+                      </article>
+                    ))}
+                    {isSending ? (
+                      <article className="message message--assistant message--typing" aria-live="polite" aria-label="Ctrl-F is typing">
+                        <span>Ctrl-F</span>
+                        <div className="typing-indicator">
+                          <i />
+                          <i />
+                          <i />
+                        </div>
+                      </article>
                     ) : null}
-                    {message.warning ? <p className="message-warning">{message.warning}</p> : null}
-                    {message.contacts?.length ? (
-                      <p className="message-meta">Contacts: {message.contacts.join(", ")}</p>
-                    ) : null}
-                    {message.role === "assistant" && message.messageId ? (
-                      <div className="feedback-controls" aria-label="Answer feedback">
-                        <button
-                          type="button"
-                          onClick={() => handleFeedback(message, "helpful")}
-                          disabled={message.feedbackRating !== undefined}
-                          aria-label="Mark answer helpful"
-                        >
-                          <ThumbsUp size={15} />
-                          <span>Helpful</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleFeedback(message, "not_helpful")}
-                          disabled={message.feedbackRating !== undefined}
-                          aria-label="Mark answer not helpful"
-                        >
-                          <ThumbsDown size={15} />
-                          <span>Not helpful</span>
-                        </button>
-                        {message.feedbackRating ? <span>Recorded: {message.feedbackRating.replace("_", " ")}</span> : null}
-                      </div>
-                    ) : null}
-                  </article>
-                ))}
-                {isSending ? (
-                  <article className="message message--assistant message--typing" aria-live="polite" aria-label="Ctrl-F is typing">
-                    <span>Ctrl-F</span>
-                    <div className="typing-indicator">
-                      <i />
-                      <i />
-                      <i />
-                    </div>
-                  </article>
-                ) : null}
-              </div>
+                  </div>
 
-              <form className="composer" onSubmit={handleSubmit}>
-                <label className="sr-only" htmlFor="question">
-                  Question
-                </label>
-                <input
-                  id="question"
-                  type="text"
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  placeholder="Ask a company question"
-                  disabled={isSending}
-                />
-                <button type="submit" aria-label="Send question" disabled={isSending || !draft.trim()}>
-                  <Send size={18} />
-                </button>
-              </form>
+                  {renderComposer()}
+                </>
+              ) : (
+                <div className="empty-chat-state">
+                  <div className="empty-chat-state__inner">
+                    <h2>What can I help with?</h2>
+                    {renderComposer("composer composer--centered")}
+                  </div>
+                </div>
+              )}
             </section>
 
             <aside className="context-panel" aria-label="Answer context">

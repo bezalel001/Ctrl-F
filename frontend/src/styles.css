@@ -203,6 +203,32 @@ a:hover {
   overflow: hidden;
 }
 
+.chat-panel--empty {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.empty-chat-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 18px;
+}
+
+.empty-chat-state__inner {
+  display: grid;
+  gap: 18px;
+  width: min(680px, 100%);
+}
+
+.empty-chat-state__inner h2 {
+  color: #16211d;
+  font-size: clamp(1.7rem, 4vw, 2.55rem);
+  font-weight: 760;
+  line-height: 1.1;
+  text-align: center;
+}
+
 .message-list {
   display: flex;
   flex-direction: column;
@@ -349,6 +375,12 @@ a:hover {
   padding: 14px;
   border-top: 1px solid #d6ded9;
   background: #fbfcfb;
+}
+
+.composer--centered {
+  padding: 0;
+  border-top: 0;
+  background: transparent;
 }
 
 .composer input {
