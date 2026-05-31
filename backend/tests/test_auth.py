@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.services.auth_service import DEMO_USER_NAME_POOLS
 
 
 def test_login_returns_token_and_user_profile() -> None:
@@ -15,9 +16,10 @@ def test_login_returns_token_and_user_profile() -> None:
     payload = response.json()
     assert payload["token_type"] == "bearer"
     assert payload["access_token"]
+    assert payload["user"]["name"] in DEMO_USER_NAME_POOLS["employee"]
     assert payload["user"] == {
         "id": "u_employee",
-        "name": "Demo Employee",
+        "name": payload["user"]["name"],
         "email": "employee@example.com",
         "role": "employee",
         "department": "People Operations",
@@ -57,12 +59,12 @@ def test_current_user_returns_authenticated_profile() -> None:
     response = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200
+    assert response.json()["name"] in DEMO_USER_NAME_POOLS["admin"]
     assert response.json() == {
         "id": "u_admin",
-        "name": "Demo Admin",
+        "name": login_response.json()["user"]["name"],
         "email": "admin@example.com",
         "role": "admin",
         "department": "IT",
         "permissions": ["chat:use", "sources:manage", "feedback:review", "audit:read"],
     }
-

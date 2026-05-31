@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
+import random
 from dataclasses import dataclass
 from typing import Any
 
@@ -18,11 +19,49 @@ class DemoUser:
     password: str
 
 
+DEMO_USER_NAME_POOLS: dict[str, tuple[str, ...]] = {
+    "employee": (
+        "Maya Schneider",
+        "Jonas Bauer",
+        "Elena Fischer",
+        "Tobias Weber",
+    ),
+    "intern": (
+        "Lena Hoffmann",
+        "Noah Wagner",
+        "Sofia Becker",
+        "Felix Gruber",
+    ),
+    "manager": (
+        "Clara Meier",
+        "Matthias Keller",
+        "Nina Schwarz",
+        "David Leitner",
+    ),
+    "hr": (
+        "Anna Huber",
+        "Markus Steiner",
+        "Laura Wagner",
+        "Simon Berger",
+    ),
+    "admin": (
+        "Julia Richter",
+        "Thomas Klein",
+        "Marie Fuchs",
+        "Patrick Hofer",
+    ),
+}
+
+
+def _random_demo_name(role: str) -> str:
+    return random.choice(DEMO_USER_NAME_POOLS[role])
+
+
 DEMO_USERS: dict[str, DemoUser] = {
     "employee@example.com": DemoUser(
         profile=UserProfile(
             id="u_employee",
-            name="Demo Employee",
+            name=_random_demo_name("employee"),
             email="employee@example.com",
             role="employee",
             department="People Operations",
@@ -33,7 +72,7 @@ DEMO_USERS: dict[str, DemoUser] = {
     "intern@example.com": DemoUser(
         profile=UserProfile(
             id="u_intern",
-            name="Demo Intern",
+            name=_random_demo_name("intern"),
             email="intern@example.com",
             role="intern",
             department="Engineering",
@@ -44,7 +83,7 @@ DEMO_USERS: dict[str, DemoUser] = {
     "manager@example.com": DemoUser(
         profile=UserProfile(
             id="u_manager",
-            name="Demo Manager",
+            name=_random_demo_name("manager"),
             email="manager@example.com",
             role="manager",
             department="Engineering",
@@ -55,7 +94,7 @@ DEMO_USERS: dict[str, DemoUser] = {
     "hr@example.com": DemoUser(
         profile=UserProfile(
             id="u_hr",
-            name="Demo HR",
+            name=_random_demo_name("hr"),
             email="hr@example.com",
             role="hr",
             department="Human Resources",
@@ -66,7 +105,7 @@ DEMO_USERS: dict[str, DemoUser] = {
     "admin@example.com": DemoUser(
         profile=UserProfile(
             id="u_admin",
-            name="Demo Admin",
+            name=_random_demo_name("admin"),
             email="admin@example.com",
             role="admin",
             department="IT",
@@ -147,4 +186,3 @@ def _base64url_encode(value: bytes) -> str:
 def _pad_base64(value: str) -> bytes:
     padding = "=" * (-len(value) % 4)
     return f"{value}{padding}".encode("utf-8")
-
