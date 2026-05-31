@@ -57,11 +57,15 @@ def _random_demo_name(role: str) -> str:
     return random.choice(DEMO_USER_NAME_POOLS[role])
 
 
+def _demo_profile_with_random_name(profile: UserProfile) -> UserProfile:
+    return profile.model_copy(update={"name": _random_demo_name(profile.role)})
+
+
 DEMO_USERS: dict[str, DemoUser] = {
     "employee@example.com": DemoUser(
         profile=UserProfile(
             id="u_employee",
-            name=_random_demo_name("employee"),
+            name=DEMO_USER_NAME_POOLS["employee"][0],
             email="employee@example.com",
             role="employee",
             department="People Operations",
@@ -72,7 +76,7 @@ DEMO_USERS: dict[str, DemoUser] = {
     "intern@example.com": DemoUser(
         profile=UserProfile(
             id="u_intern",
-            name=_random_demo_name("intern"),
+            name=DEMO_USER_NAME_POOLS["intern"][0],
             email="intern@example.com",
             role="intern",
             department="Engineering",
@@ -83,7 +87,7 @@ DEMO_USERS: dict[str, DemoUser] = {
     "manager@example.com": DemoUser(
         profile=UserProfile(
             id="u_manager",
-            name=_random_demo_name("manager"),
+            name=DEMO_USER_NAME_POOLS["manager"][0],
             email="manager@example.com",
             role="manager",
             department="Engineering",
@@ -94,7 +98,7 @@ DEMO_USERS: dict[str, DemoUser] = {
     "hr@example.com": DemoUser(
         profile=UserProfile(
             id="u_hr",
-            name=_random_demo_name("hr"),
+            name=DEMO_USER_NAME_POOLS["hr"][0],
             email="hr@example.com",
             role="hr",
             department="Human Resources",
@@ -105,7 +109,7 @@ DEMO_USERS: dict[str, DemoUser] = {
     "admin@example.com": DemoUser(
         profile=UserProfile(
             id="u_admin",
-            name=_random_demo_name("admin"),
+            name=DEMO_USER_NAME_POOLS["admin"][0],
             email="admin@example.com",
             role="admin",
             department="IT",
@@ -121,7 +125,7 @@ def authenticate_user(email: str, password: str) -> UserProfile:
     if demo_user is None or not hmac.compare_digest(demo_user.password, password):
         raise AuthenticationError("Invalid credentials")
 
-    return demo_user.profile
+    return _demo_profile_with_random_name(demo_user.profile)
 
 
 def get_user_by_id(user_id: str) -> UserProfile | None:
@@ -133,7 +137,7 @@ def get_user_by_id(user_id: str) -> UserProfile | None:
 
 
 def create_access_token(user: UserProfile, secret: str) -> str:
-    payload = {"sub": user.id, "email": user.email}
+    payload = {"sub": user.id, "email": user.email, "name": user.name}
     encoded_payload = _base64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
     signature = _sign(encoded_payload, secret)
     return f"{encoded_payload}.{signature}"
@@ -158,7 +162,15 @@ def resolve_user_from_token(token: str, secret: str) -> UserProfile:
     if user is None:
         raise AuthenticationError("User not found")
 
-    return user
+    token_name = payload.get("name")
+    if not isinstance(token_name, str):
+        return user
+
+    allowed_names = DEMO_USER_NAME_POOLS.get(user.role, ())
+    if token_name not in allowed_names:
+        raise AuthenticationError("Token name invalid")
+
+    return user.model_copy(update={"name": token_name})
 
 
 def _decode_payload(encoded_payload: str) -> dict[str, Any]:
