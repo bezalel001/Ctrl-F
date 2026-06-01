@@ -17,7 +17,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getCurrentUser, login } from "./api/auth";
 import { sendChatMessage } from "./api/chat";
@@ -117,6 +117,8 @@ function App() {
   const [indexingSourceId, setIndexingSourceId] = useState<number | null>(null);
   const [editingSourceId, setEditingSourceId] = useState<number | null>(null);
   const [deletingSourceId, setDeletingSourceId] = useState<number | null>(null);
+  const messageListRef = useRef<HTMLDivElement | null>(null);
+  const questionInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -171,6 +173,23 @@ function App() {
       setSourceError(error instanceof Error ? error.message : "Source registry could not be loaded.");
     });
   }, [token, user]);
+
+  useEffect(() => {
+    const messageList = messageListRef.current;
+    if (!messageList) return;
+
+    requestAnimationFrame(() => {
+      messageList.scrollTop = messageList.scrollHeight;
+    });
+  }, [messages, isSending]);
+
+  useEffect(() => {
+    if (!user || isSending) return;
+
+    requestAnimationFrame(() => {
+      questionInputRef.current?.focus();
+    });
+  }, [isSending, user]);
 
   const latestAssistantSources = useMemo(() => {
     return [...messages].reverse().find((message) => message.sources?.length)?.sources ?? [];
@@ -435,6 +454,7 @@ function App() {
         </label>
         <input
           id="question"
+          ref={questionInputRef}
           type="text"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -489,7 +509,7 @@ function App() {
             <section className={`chat-panel ${hasStartedChat ? "" : "chat-panel--empty"}`} aria-label="Chat">
               {hasStartedChat ? (
                 <>
-                  <div className="message-list">
+                  <div className="message-list" ref={messageListRef}>
                     {messages.map((message) => (
                       <article
                         className={`message message--${message.role} message--${message.status ?? "normal"}`}

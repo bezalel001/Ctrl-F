@@ -114,7 +114,7 @@ a:hover {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 18px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .login-panel {
@@ -199,7 +199,7 @@ a:hover {
 .chat-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  min-height: min(760px, calc(100vh - 118px));
+  height: min(760px, calc(100vh - 118px));
   overflow: hidden;
 }
 
@@ -670,7 +670,7 @@ a:hover {
   }
 
   .chat-panel {
-    min-height: calc(100vh - 150px);
+    height: calc(100vh - 150px);
   }
 
   .connection {
