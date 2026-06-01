@@ -223,7 +223,7 @@ a:hover {
 
 .empty-chat-state__inner h2 {
   color: #16211d;
-  font-size: clamp(1.7rem, 4vw, 2.55rem);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
   font-weight: 760;
   line-height: 1.1;
   text-align: center;
@@ -235,11 +235,6 @@ a:hover {
   gap: 12px;
   padding: 18px;
   overflow-y: auto;
-}
-
-.message-list::before {
-  content: "";
-  margin-top: auto;
 }
 
 .message {
