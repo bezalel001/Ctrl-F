@@ -199,7 +199,7 @@ a:hover {
 .chat-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  height: calc(100vh - 118px);
+  height: calc(100vh - 130px);
   min-height: 520px;
   overflow: hidden;
 }
