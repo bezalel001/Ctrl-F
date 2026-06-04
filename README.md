@@ -47,8 +47,8 @@ Ctrl-F/
   backend/                 Python/FastAPI backend
   frontend/                React/TypeScript frontend
   data/
-    approved_sources/      Fictitious demo Markdown sources
-    evaluation/            Demo RAG evaluation cases
+    approved_sources/      Fictitious sample Markdown sources
+    evaluation/            RAG evaluation cases
   docs/
     DEMO_FLOW.md           End-to-end setup and demo flow
     IMPLEMENTATION_PLAN.md Architecture and implementation plan
@@ -136,7 +136,7 @@ docker compose --profile ollama exec ollama ollama pull nomic-embed-text
 docker compose --profile ollama exec ollama ollama pull llama3.2
 ```
 
-## Seed And Index Demo Sources
+## Seed And Index Sample Sources
 
 Markdown files in `data/approved_sources/` are sample documents only. They are fictitious and safe to commit. Real private company documents should not be committed unless the repository is approved to store them.
 
@@ -161,9 +161,11 @@ Indexing loads the Markdown file, chunks it, creates embeddings, and stores sear
 
 Current ingestion supports local Markdown/text-style source files. PDF ingestion is not implemented yet.
 
-## Demo Users
+## Local Prototype Accounts
 
-All demo users use password `demo`.
+The local login screen uses fixed prototype accounts so you can test role and department access without configuring an identity provider. All prototype accounts use password `demo`.
+
+The email selects the role and department. After sign-in, the app displays a realistic generated name for that role instead of generic demo labels.
 
 | Email | Role | Department | Notable access |
 | --- | --- | --- | --- |
