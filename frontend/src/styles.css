@@ -114,7 +114,7 @@ a:hover {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 18px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .login-panel {
@@ -199,7 +199,8 @@ a:hover {
 .chat-panel {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  min-height: min(760px, calc(100vh - 118px));
+  height: calc(100vh - 130px);
+  min-height: 520px;
   overflow: hidden;
 }
 
@@ -223,7 +224,7 @@ a:hover {
 
 .empty-chat-state__inner h2 {
   color: #16211d;
-  font-size: clamp(1.7rem, 4vw, 2.55rem);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
   font-weight: 760;
   line-height: 1.1;
   text-align: center;
@@ -235,11 +236,6 @@ a:hover {
   gap: 12px;
   padding: 18px;
   overflow-y: auto;
-}
-
-.message-list::before {
-  content: "";
-  margin-top: auto;
 }
 
 .message {
@@ -675,7 +671,7 @@ a:hover {
   }
 
   .chat-panel {
-    min-height: calc(100vh - 150px);
+    height: calc(100vh - 150px);
   }
 
   .connection {
