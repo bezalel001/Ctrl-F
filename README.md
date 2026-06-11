@@ -171,13 +171,13 @@ The local login screen uses fixed prototype accounts so you can test role and de
 
 The email selects the role and department. After sign-in, the app displays a realistic generated name for that role instead of generic demo labels.
 
-| Email | Role | Department | Notable access |
-| --- | --- | --- | --- |
-| `employee@example.com` | employee | People Operations | Chat |
-| `intern@example.com` | intern | Engineering | Chat |
-| `manager@example.com` | manager | Engineering | Chat, feedback review |
-| `hr@example.com` | hr | Human Resources | Chat, feedback review |
-| `admin@example.com` | admin | IT | Source management, feedback review, audit logs |
+| Email                  | Role     | Department        | Notable access                                 |
+| ---------------------- | -------- | ----------------- | ---------------------------------------------- |
+| `employee@example.com` | employee | People Operations | Chat                                           |
+| `intern@example.com`   | intern   | Engineering       | Chat                                           |
+| `manager@example.com`  | manager  | Engineering       | Chat, feedback review                          |
+| `hr@example.com`       | hr       | Human Resources   | Chat, feedback review                          |
+| `admin@example.com`    | admin    | IT                | Source management, feedback review, audit logs |
 
 ## Demo Questions
 
@@ -303,6 +303,9 @@ Docker builds need several GB of free space. Prefer freeing at least 15-20 GB be
 Avoid `docker volume prune` unless you are okay losing local PostgreSQL and ChromaDB volumes.
 
 ## Documentation
+
+- [documentation/Documentation.pdf](documentation/Documentation.pdf): Complete system Documentation
+- [documentation/Video-Demo-link.md](documentation/Video-Demo-link.md): Video Demo link of Ctrl
 
 - [docs/DEMO_FLOW.md](docs/DEMO_FLOW.md): end-to-end setup and demo flow
 - [docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md): project architecture and implementation plan
