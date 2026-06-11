@@ -43,7 +43,7 @@ docker compose --profile ollama exec ollama ollama pull llama3.2
 
 ## 3. Seed Demo Sources
 
-Register the fictitious sample documents as approved source records:
+In the Docker development stack, the backend automatically registers the fictitious sample documents as approved source records on startup. If you disable that with `SEED_DEMO_SOURCES=false`, or if you are running the backend outside Docker, register them manually:
 
 ```bash
 docker compose exec backend uv run python -m app.scripts.seed_demo_sources

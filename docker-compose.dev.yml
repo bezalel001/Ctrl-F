@@ -11,6 +11,7 @@ services:
       - ./backend:/app
     environment:
       APP_ENV: development
+      SEED_DEMO_SOURCES: ${SEED_DEMO_SOURCES:-true}
 
 volumes:
   frontend_node_modules:

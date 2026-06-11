@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "Ctrl-F Backend"
     app_version: str = "0.1.0"
     environment: str = Field(default="development", validation_alias="APP_ENV")
+    seed_demo_sources: bool = Field(default=False, validation_alias="SEED_DEMO_SOURCES")
     jwt_secret: str = Field(default="change-me", validation_alias="JWT_SECRET")
     database_url: str = Field(
         default="sqlite:///./ctrlf.db",

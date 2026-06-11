@@ -92,6 +92,7 @@ OPENAI_API_KEY=
 LLM_PROVIDER=auto
 ANTHROPIC_API_KEY=
 OLLAMA_BASE_URL=http://ollama:11434
+SEED_DEMO_SOURCES=true
 JWT_SECRET=change-me
 ```
 
@@ -99,6 +100,7 @@ Provider behavior:
 
 - `EMBEDDING_PROVIDER=auto` uses OpenAI embeddings when `OPENAI_API_KEY` is set, otherwise Ollama.
 - `LLM_PROVIDER=auto` uses Anthropic first, then OpenAI, then Ollama.
+- `SEED_DEMO_SOURCES=true` registers the fictitious demo source records on backend startup in the Docker development stack. It does not index them.
 - Do not commit `.env` or real API keys.
 
 ## Run With Docker
@@ -140,22 +142,24 @@ docker compose --profile ollama exec ollama ollama pull llama3.2
 
 Markdown files in `data/approved_sources/` are sample documents only. They are fictitious and safe to commit. Real private company documents should not be committed unless the repository is approved to store them.
 
-The files alone are not enough for chat. They must be registered and indexed.
+The files alone are not enough for chat. Source records must be registered in Postgres, then indexed into ChromaDB.
 
-1. Register source records:
+In the Docker development stack, the backend automatically registers the demo source records on startup with `SEED_DEMO_SOURCES=true`. This makes all five demo records appear in the admin Source Registry, but it does not index them.
+
+If you disable auto-registration with `SEED_DEMO_SOURCES=false`, or if you are running the backend outside Docker, register the source records manually:
 
 ```bash
 docker compose exec backend uv run python -m app.scripts.seed_demo_sources
 ```
 
-2. Sign in as admin:
+1. Sign in as admin:
 
 ```text
 admin@example.com
 password: demo
 ```
 
-3. In the Source Registry panel, click **Index** for each approved source.
+2. In the Source Registry panel, click **Index** for each approved source you want available for chat.
 
 Indexing loads the Markdown file, chunks it, creates embeddings, and stores searchable vectors in ChromaDB with role and department metadata.
 

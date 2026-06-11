@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlmodel import Session
 
 from app.api.routes.audit import router as audit_router
 from app.api.routes.auth import router as auth_router
@@ -11,12 +12,16 @@ from app.api.routes.feedback import router as feedback_router
 from app.api.routes.health import router as health_router
 from app.api.routes.sources import router as sources_router
 from app.core.config import get_settings
-from app.storage.database import init_db
+from app.services.demo_source_service import seed_demo_sources
+from app.storage.database import engine, init_db
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     init_db()
+    if get_settings().seed_demo_sources:
+        with Session(engine) as session:
+            seed_demo_sources(session)
     yield
 
 
